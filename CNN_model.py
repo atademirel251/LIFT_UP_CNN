@@ -7,6 +7,7 @@ from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Dropou
 from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
 from PIL import Image
+#ATA DEGISIKLIK
 
 # 1. Veri Hazırlığı (Normalizasyon olmadan)
 def load_data_in_order(image_folder, csv_folder, max_length=210):  # max_length = 210 olarak değiştirildi
