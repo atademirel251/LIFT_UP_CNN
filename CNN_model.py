@@ -22,7 +22,7 @@ def load_data_in_order(image_folder, csv_folder, max_length=210):  # max_length 
 
     for img_file, csv_file in zip(image_files, csv_files):
         image_path = os.path.join(image_folder, img_file)
-        image = Image.open(image_path).convert('L').resize((32, 32))
+        image = Image.open(image_path)
         image_array = np.array(image)/255.0  # Görüntü üzerinde normalizasyon yok
         images.append(image_array)
 
