@@ -1,0 +1,69 @@
+import cv2
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Google Colab için dosya yükleme
+from google.colab import files
+
+# Kullanıcıdan dosya yüklemesini isteyin
+uploaded = files.upload()
+
+# Yüklenen resmin yolunu alın
+input_path = next(iter(uploaded))
+
+# Görüntüyü yükleyin
+image = cv2.imread(input_path)
+
+# Pikselize etme fonksiyonu
+def pixelize(image, pixel_size):
+    height, width, _ = image.shape
+    # Piksel boyutuna göre görüntüyü yeniden boyutlandır
+    small = cv2.resize(image, (width // pixel_size, height // pixel_size), interpolation=cv2.INTER_LINEAR)
+    # Küçültülmüş görüntüyü tekrar büyüt
+    pixelized = cv2.resize(small, (width, height), interpolation=cv2.INTER_NEAREST)
+    return pixelized
+
+# Pikselize edilmiş görseli oluşturun
+pixel_size = 10  # Piksel boyutu (daha büyük sayılar daha büyük pikseller oluşturur)
+pixelized_image = pixelize(image, pixel_size)
+
+# Sarı rengin tespiti
+# Sarı, RGB renk uzayında genellikle yüksek kırmızı ve yeşil değerlerine sahipken, mavi düşük olur.
+# HSV renk uzayında sarı daha belirgin şekilde tespit edilebilir.
+
+hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+
+# Sarı rengin HSV aralığı
+lower_yellow = np.array([20, 100, 100])
+upper_yellow = np.array([30, 255, 255])
+
+# Maskeyi oluştur
+yellow_mask = cv2.inRange(hsv_image, lower_yellow, upper_yellow)
+
+# Pikselize edilmiş görselin üzerine maske uygula
+# Sarı alanlar siyah olacak, diğer her şey beyaz olacak
+result_image = np.ones_like(image) * 255  # Önce tüm arka planı beyaz yap
+result_image[yellow_mask == 255] = [0, 0, 0]  # Sarı bölgeleri siyah yap
+
+# Sonuçları göster
+plt.figure(figsize=(15, 5))
+
+# Orijinal Görüntü
+plt.subplot(1, 3, 1)
+plt.imshow(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
+plt.title('Original Image')
+plt.axis('off')
+
+# Pikselize Edilmiş Görüntü
+plt.subplot(1, 3, 2)
+plt.imshow(cv2.cvtColor(pixelized_image, cv2.COLOR_BGR2RGB))
+plt.title('Pixelized Image')
+plt.axis('off')
+
+# Sarı alanlar siyah, diğer yerler beyaz olan görüntü
+plt.subplot(1, 3, 3)
+plt.imshow(cv2.cvtColor(result_image, cv2.COLOR_BGR2RGB))
+plt.title('Yellow to Black Image')
+plt.axis('off')
+
+plt.show()
