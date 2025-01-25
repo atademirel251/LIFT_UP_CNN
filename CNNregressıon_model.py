@@ -2,15 +2,15 @@ import os
 import numpy as np
 import pandas as pd
 import tensorflow as tf
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Dropout
+from tensorflow.keras.models import Sequential, Model
+from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Dropout, GlobalAveragePooling2D
+from tensorflow.keras.applications import VGG16
 from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
 from PIL import Image
-#ATA DEGISIKLIK
 
-# 1. Veri Hazırlığı (Normalizasyon olmadan)
-def load_data_in_order(image_folder, csv_folder, max_length=210):  # max_length = 210 olarak değiştirildi
+# Veri Hazırlığı (Normalizasyon olmadan)
+def load_data_in_order(image_folder, csv_folder, max_length=102):
     image_files = sorted([f for f in os.listdir(image_folder) if not f.startswith('.')])
     csv_files = sorted([f for f in os.listdir(csv_folder) if not f.startswith('.') and not f.endswith('.ipynb_checkpoints')])
 
@@ -23,7 +23,7 @@ def load_data_in_order(image_folder, csv_folder, max_length=210):  # max_length 
     for img_file, csv_file in zip(image_files, csv_files):
         image_path = os.path.join(image_folder, img_file)
         image = Image.open(image_path)
-        image_array = np.array(image)/255.0  # Görüntü üzerinde normalizasyon yok
+        image_array = np.array(image)/255.0  
         images.append(image_array)
 
         csv_path = os.path.join(csv_folder, csv_file)
@@ -39,34 +39,30 @@ def load_data_in_order(image_folder, csv_folder, max_length=210):  # max_length 
             combined = np.vstack((combined, pad))
 
         outputs.append(combined)
-
-    images = np.expand_dims(np.array(images, dtype=np.float32), axis=-1)
+    images = np.array(images, dtype=np.float32)  # Görüntülerin son boyutu artık (128, 128, 3)
     outputs = np.array(outputs, dtype=np.float32)
 
     return images, outputs
 
-image_folder = "/content/sample_data/output_resimler"
-csv_folder = "/content/sample_data/output_CSV"
+image_folder = "/content/sample_data/INPUT_rESİM"
+csv_folder = "/content/sample_data/OUTPUT_CSV"
 
-# max_length = 210
-images, s21_params = load_data_in_order(image_folder, csv_folder, max_length=210)
+images, s21_params = load_data_in_order(image_folder, csv_folder, max_length=102)
 X_train, X_test, y_train, y_test = train_test_split(images, s21_params, test_size=0.2, random_state=42)
 
-# 2. Model Mimarisi
-model = Sequential([
-    Conv2D(64, kernel_size=(3, 3), activation='relu', input_shape=(32, 32, 1)),
-    MaxPooling2D(pool_size=(2, 2)),
-    Dropout(0.2),
-    Conv2D(128, kernel_size=(3, 3), activation='relu'),
-    MaxPooling2D(pool_size=(2, 2)),
-    Dropout(0.3),
-    Flatten(),
-    Dense(1024, activation='relu'),
-    Dropout(0.4),
-    Dense(s21_params.shape[1] * s21_params.shape[2], activation='linear')
-])
+# Pre-trained VGG16 Modeli ile Özellik Çıkartma
+base_model = VGG16(weights='imagenet', include_top=False, input_shape=(128, 128, 3))  # include_top=False, son katmanları çıkarıyoruz
+base_model.trainable = False  # Bu katmanları donduruyoruz (pre-trained modelin eğitimini yapmıyoruz)
 
+# Özellik çıkarıcı model
+model_input = base_model.input
+x = GlobalAveragePooling2D()(base_model.output)  # Görüntüden özellik çıkartalım
+x = Dense(1024, activation='relu')(x)
+x = Dropout(0.4)(x)
+output = Dense(s21_params.shape[1] * s21_params.shape[2], activation='linear')(x)
 
+# Modeli oluştur
+model = Model(inputs=model_input, outputs=output)
 
 # Öğrenme Hızı Planlayıcı
 lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(
@@ -79,13 +75,14 @@ model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=lr_schedule),
               loss='mean_squared_error',
               metrics=['mae'])
 
+# Veriyi uygun şekilde düzleştiriyoruz
 y_train_flat = y_train.reshape(y_train.shape[0], -1)
 y_test_flat = y_test.reshape(y_test.shape[0], -1)
 
-# 3. Model Eğitimi
+# Modeli Eğitme
 history = model.fit(X_train, y_train_flat, epochs=100, batch_size=64, validation_split=0.2, verbose=1)
 
-# 4. Eğitim ve Doğrulama Kaybı Grafiği
+# Eğitim ve Doğrulama Kaybı Grafiği
 plt.figure(figsize=(10, 6))
 plt.plot(history.history['loss'], label='Eğitim Kaybı', linestyle='-', marker='o', alpha=0.7)
 plt.plot(history.history['val_loss'], label='Doğrulama Kaybı', linestyle='--', marker='x', alpha=0.7)
@@ -96,7 +93,7 @@ plt.legend()
 plt.grid(True)
 plt.show()
 
-# 5. Test ve Tahmin Grafiği
+# Test ve Tahmin Grafiği
 example_index = 1
 example_input = X_test[example_index]
 example_output = y_test[example_index]
@@ -123,5 +120,5 @@ plt.tight_layout()
 plt.show()
 
 # Modeli kaydet
-model.save("/content/sample_data/CNN_155(1)_non_normalized.keras")
+model.save("/content/sample_data/VGG16_feature_extracted_model.keras")
 print("Model '.keras' formatında kaydedildi.")
