@@ -1,69 +1,51 @@
 import cv2
 import numpy as np
-import matplotlib.pyplot as plt
+import os
 
-# Google Colab için dosya yükleme
-from google.colab import files
-
-# Kullanıcıdan dosya yüklemesini isteyin
-uploaded = files.upload()
-
-# Yüklenen resmin yolunu alın
-input_path = next(iter(uploaded))
-
-# Görüntüyü yükleyin
-image = cv2.imread(input_path)
-
-# Pikselize etme fonksiyonu
 def pixelize(image, pixel_size):
     height, width, _ = image.shape
-    # Piksel boyutuna göre görüntüyü yeniden boyutlandır
     small = cv2.resize(image, (width // pixel_size, height // pixel_size), interpolation=cv2.INTER_LINEAR)
-    # Küçültülmüş görüntüyü tekrar büyüt
     pixelized = cv2.resize(small, (width, height), interpolation=cv2.INTER_NEAREST)
     return pixelized
 
-# Pikselize edilmiş görseli oluşturun
-pixel_size = 10  # Piksel boyutu (daha büyük sayılar daha büyük pikseller oluşturur)
-pixelized_image = pixelize(image, pixel_size)
+def process_images(input_folder, output_folder, pixel_size):
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
 
-# Sarı rengin tespiti
-# Sarı, RGB renk uzayında genellikle yüksek kırmızı ve yeşil değerlerine sahipken, mavi düşük olur.
-# HSV renk uzayında sarı daha belirgin şekilde tespit edilebilir.
+    for filename in os.listdir(input_folder):
+        if filename.endswith(('.png', '.jpg', '.jpeg', '.bmp', '.tiff')):
+            filepath = os.path.join(input_folder, filename)
+            image = cv2.imread(filepath)
 
-hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+            if image is None:
+                print(f"Unable to read image: {filename}")
+                continue
 
-# Sarı rengin HSV aralığı
-lower_yellow = np.array([20, 100, 100])
-upper_yellow = np.array([30, 255, 255])
+            # Pikselize etme
+            pixelized_image = pixelize(image, pixel_size)
 
-# Maskeyi oluştur
-yellow_mask = cv2.inRange(hsv_image, lower_yellow, upper_yellow)
+            # Sarı rengin tespiti
+            hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+            lower_yellow = np.array([20, 100, 100])
+            upper_yellow = np.array([30, 255, 255])
+            yellow_mask = cv2.inRange(hsv_image, lower_yellow, upper_yellow)
 
-# Pikselize edilmiş görselin üzerine maske uygula
-# Sarı alanlar siyah olacak, diğer her şey beyaz olacak
-result_image = np.ones_like(image) * 255  # Önce tüm arka planı beyaz yap
-result_image[yellow_mask == 255] = [0, 0, 0]  # Sarı bölgeleri siyah yap
+            # Pikselize edilmiş görselin üzerine maske uygula
+            result_image = np.ones_like(pixelized_image) * 255
+            result_image[yellow_mask == 255] = [0, 0, 0]
 
-# Sonuçları göster
-plt.figure(figsize=(15, 5))
+            # Görüntüyü yeniden boyutlandır
+            resized_image = cv2.resize(result_image, (128, 128), interpolation=cv2.INTER_LINEAR)
 
-# Orijinal Görüntü
-plt.subplot(1, 3, 1)
-plt.imshow(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
-plt.title('Original Image')
-plt.axis('off')
+            # Çıktıyı kaydet
+            output_path = os.path.join(output_folder, filename)
+            cv2.imwrite(output_path, resized_image)
+            print(f"Processed and saved: {output_path}")
 
-# Pikselize Edilmiş Görüntü
-plt.subplot(1, 3, 2)
-plt.imshow(cv2.cvtColor(pixelized_image, cv2.COLOR_BGR2RGB))
-plt.title('Pixelized Image')
-plt.axis('off')
+# Giriş ve çıkış klasörlerini belirleyin
+input_folder = "input_images"  # Giriş klasörü
+output_folder = "output_images"  # Çıkış klasörü
+pixel_size = 10  # Piksel boyutu
 
-# Sarı alanlar siyah, diğer yerler beyaz olan görüntü
-plt.subplot(1, 3, 3)
-plt.imshow(cv2.cvtColor(result_image, cv2.COLOR_BGR2RGB))
-plt.title('Yellow to Black Image')
-plt.axis('off')
-
-plt.show()
+# Görüntüleri işleme
+process_images(input_folder, output_folder, pixel_size)
