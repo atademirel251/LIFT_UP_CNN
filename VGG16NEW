@@ -11,6 +11,9 @@ from PIL import Image
 from tensorflow.keras.callbacks import EarlyStopping
 
 
+physical_devices = tf.config.list_physical_devices('GPU')
+tf.config.experimental.set_memory_growth(physical_devices[0], True)
+
 
 # Veri Hazırlığı (Normalizasyon ile)
 def load_data_in_order(image_folder, csv_folder, max_length=102):
@@ -107,7 +110,7 @@ early_stopping = EarlyStopping(
 history = model.fit(
     X_train, y_train_flat,
     epochs=40,
-    batch_size=64,
+    batch_size=16,
     validation_data=(X_test, y_test_flat),
     callbacks=[early_stopping],  # Early Stopping'i burada kullan
     verbose=1
