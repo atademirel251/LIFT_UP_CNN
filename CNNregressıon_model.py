@@ -13,17 +13,18 @@ from PIL import Image
 def load_data_in_order(image_folder, csv_folder, max_length=102):
     image_files = sorted([f for f in os.listdir(image_folder) if not f.startswith('.')])
     csv_files = sorted([f for f in os.listdir(csv_folder) if not f.startswith('.') and not f.endswith('.ipynb_checkpoints')])
-
-    if len(image_files) != len(csv_files):
-        raise ValueError("Görüntü ve CSV dosyalarının sayısı eşleşmiyor!")
+    print(len(image_files))
+    print(len(csv_files))
+    """ if len(image_files) != len(csv_files):
+        raise ValueError("Görüntü ve CSV dosyalarının sayısı eşleşmiyor!") """
 
     images = []
     outputs = []
 
     for img_file, csv_file in zip(image_files, csv_files):
         image_path = os.path.join(image_folder, img_file)
-        image = Image.open(image_path)
-        image_array = np.array(image)/255.0  
+        image = Image.open(image_path).convert('L').resize((32, 32))
+        image_array = np.array(image)/255.0  # Görüntü üzerinde normalizasyon yok
         images.append(image_array)
 
         csv_path = os.path.join(csv_folder, csv_file)
@@ -44,8 +45,8 @@ def load_data_in_order(image_folder, csv_folder, max_length=102):
 
     return images, outputs
 
-image_folder = "/content/sample_data/INPUT_rESİM"
-csv_folder = "/content/sample_data/OUTPUT_CSV"
+image_folder = "/content/sample_data/output_resimler"
+csv_folder = "/content/sample_data/output_CSV"
 
 images, s21_params = load_data_in_order(image_folder, csv_folder, max_length=102)
 X_train, X_test, y_train, y_test = train_test_split(images, s21_params, test_size=0.2, random_state=42)

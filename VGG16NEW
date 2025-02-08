@@ -56,8 +56,8 @@ def load_data_in_order(image_folder, csv_folder, max_length=102):
     return images, outputs
 
 # Veri klasörlerini tanımla
-image_folder = "/content/sample_data/resım"
-csv_folder = "/content/sample_data/csv"
+image_folder = "C:/Users/atade/Desktop/1000verısetı/input_Resşm"
+csv_folder = "C:/Users/atade/Desktop/1000verısetı/csv"
 
 # Veriyi yükle
 images, s21_params = load_data_in_order(image_folder, csv_folder, max_length=102)
