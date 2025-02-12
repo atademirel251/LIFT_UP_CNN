@@ -83,7 +83,7 @@ output = Dense(s21_params.shape[1] * s21_params.shape[2], activation='linear')(x
 model = Model(inputs=model_input, outputs=output)
 
 # Öğrenme Hızı Planlayıcı
-decay_steps = len(X_train) // 64  # Batch size = 64
+decay_steps = len(X_train) // 16 # Batch size = 64
 lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(
     initial_learning_rate=0.001,
     decay_steps=decay_steps,
@@ -154,5 +154,5 @@ plt.tight_layout()
 plt.show()
 
 # Modeli kaydet
-model.save("/content/sample_data/VGG16_feature_extracted_model.keras")
+model.save("C:/Users/atade/Desktop/test_sonuçları/VGG16+TEST/model/VGG16_feature_extracted_model.keras")
 print("Model '.keras' formatında kaydedildi.")
