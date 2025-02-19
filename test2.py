@@ -4,7 +4,7 @@ import pandas as pd
 import tensorflow as tf
 import matplotlib.pyplot as plt
 from PIL import Image
-
+import tensorflow.keras.backend as K
 # Veri Hazırlığı Fonksiyonu
 
 def load_data_in_order(image_folder, csv_folder, max_length=102):
@@ -53,13 +53,18 @@ X_data, y_data = load_data_in_order(image_folder, csv_folder, max_length=102)
 from sklearn.model_selection import train_test_split
 _, X_test, _, y_test = train_test_split(X_data, y_data, test_size=0.2, random_state=42)
 
+
+def weighted_loss(y_true, y_pred):
+    error = K.abs(y_true - y_pred)
+    weight = K.exp(-0.06 * y_true)  # Küçük S21 değerlerine daha fazla ağırlık ver
+    return K.mean(weight * error) 
 # Modeli yükle
-model_path = "C:/Users/atade/Desktop/test_sonuçları/VGG16+TEST/model/VGG16_feature_extracted_model_WeightedLoss.keras"
-loaded_model = tf.keras.models.load_model(model_path, custom_objects={'weighted_loss': None})
+model_path = r"C:\Users\atade\Desktop\test_sonuçları\VGG16+TEST\model\VGG16_feature_extracted_model_WeightedLoss065.keras"
+loaded_model = tf.keras.models.load_model(model_path, custom_objects={'weighted_loss':weighted_loss})
 print(f"Model başarıyla yüklendi: {model_path}")
 
 # Test verisiyle tahmin yap
-example_index = 7  # Örnek test verisi seç
+example_index = 40 # Örnek test verisi seç
 example_input = X_test[example_index]  # Test girdisi
 example_output = y_test[example_index]  # Gerçek çıktı
 

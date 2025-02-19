@@ -16,23 +16,23 @@ physical_devices = tf.config.list_physical_devices('GPU')
 tf.config.experimental.set_memory_growth(physical_devices[0], True)
 
  # Ağırlıklı Kayıp Fonksiyonu (Dip Noktalara Önem Ver)
-""" def weighted_loss(y_true, y_pred):
-    error = K.abs(y_true - y_pred)
-    weight = K.exp(-0.08 * y_true)  # Küçük S21 değerlerine daha fazla ağırlık ver
-    return K.mean(weight * error) """ 
-  
-  
-
-
-
 def weighted_loss(y_true, y_pred):
     error = K.abs(y_true - y_pred)
-    alpha = 0.08  # Ağırlık katsayısı
+    weight = K.exp(-0.05 * y_true)  # Küçük S21 değerlerine daha fazla ağırlık ver
+    return K.mean(weight * error)   
 
-    # Ağırlık fonksiyonunu simetrik hale getir
-    weight = K.exp(-alpha * K.abs(y_true))  # Mutlak değer alarak simetriyi sağla
 
-    return K.mean(weight * error)
+
+
+
+""" def weighted_loss(y_true, y_pred):
+    error = K.abs(y_true - y_pred)
+    alpha = 0.05  # Ağırlık katsayısı (ayar çekilebilir)
+
+    # Dip ve tepe noktalarını cezalandıran ağırlık fonksiyonu
+    weight = K.exp(-alpha * (y_true - K.mean(y_true))**2)  
+
+    return K.mean(weight * error) """
 
 
 
@@ -42,13 +42,11 @@ def weighted_loss(y_true, y_pred):
     weight = K.exp(-alpha * K.abs(y_true))  
     return K.mean(weight * error) """
 
-""" def custom_loss(y_true, y_pred):
-    error = K.abs(y_true - y_pred)  # Hatanın mutlak değeri
-    penalty = K.switch(error > 20.0, error ** 2, error)  # Hata 5'ten büyükse karesini alarak cezalandır
-    return K.mean(penalty) """ 
+
+
 
 # Veri Hazırlığı (Normalizasyon ile)
-def load_data_in_order(image_folder, csv_folder, max_length=102):
+def load_data_in_order(image_folder, csv_folder, max_length=101):
     image_files = sorted([f for f in os.listdir(image_folder) if not f.startswith('.')], key=str.lower)
     csv_files = sorted([f for f in os.listdir(csv_folder) if not f.startswith('.') and not f.endswith('.ipynb_checkpoints')], key=str.lower)
 
@@ -88,7 +86,7 @@ image_folder = "C:/Users/atade/Desktop/1000verısetı/input_Resşm"
 csv_folder = "C:/Users/atade/Desktop/1000verısetı/csv"
 
 # Veriyi yükle
-images, s21_params = load_data_in_order(image_folder, csv_folder, max_length=102)
+images, s21_params = load_data_in_order(image_folder, csv_folder, max_length=101)
 
 # Veriyi eğitim ve test setlerine ayır
 X_train, X_test, y_train, y_test = train_test_split(images, s21_params, test_size=0.2, random_state=42)
@@ -154,7 +152,7 @@ plt.grid(True)
 plt.show()
 
 # Test ve Tahmin Grafiği
-example_index = 1
+example_index = 15
 example_input = X_test[example_index]
 example_output = y_test[example_index]
 
@@ -180,5 +178,5 @@ plt.tight_layout()
 plt.show()
 
 # Modeli kaydet
-model.save("C:/Users/atade/Desktop/test_sonuçları/VGG16+TEST/model/VGG16_feature_extracted_model_WeightedLoss1.keras")
+model.save("C:/Users/atade/Desktop/test_sonuçları/VGG16+TEST/model/VGG16_feature_extracted_model_WeightedLossekstra.keras")
 print("Model '.keras' formatında kaydedildi.")
