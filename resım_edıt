@@ -16,7 +16,8 @@ def process_images(input_folder, output_folder, pixel_size):
         if filename.endswith(('.png', '.jpg', '.jpeg', '.bmp', '.tiff')):
             filepath = os.path.join(input_folder, filename)
             filepath = os.path.normpath(filepath)
-            image = cv2.imread(filepath)    
+            image = cv2.imread(filepath) 
+           
 
             if image is None:
                 print(f"Unable to read image: {filename}")
@@ -44,8 +45,8 @@ def process_images(input_folder, output_folder, pixel_size):
             print(f"Processed and saved: {output_path}")
 
 # Giriş ve çıkış klasörlerini belirleyin
-input_folder = r"C:\Users\atade\Desktop\Sinan_veriseti_20Subat\images_kirpilmis_15_02_2025"  # Giriş klasörü
-output_folder = r"C:\Users\atade\Desktop\Sinan_veriseti_20Subat\PixelizedImages"  # Çıkış klasörü
+input_folder = r"C:\Users\atade\Desktop\Sinan_veriseti_20Subat\images_kirpilmis_20_02_2025\cropped_images"  # Giriş klasörü
+output_folder = r"C:\Users\atade\Desktop\Sinan_veriseti_20Subat\PixelizedImages_20_02"  # Çıkış klasörü
 pixel_size = 10  # Piksel boyutu
 
 # Görüntüleri işleme
