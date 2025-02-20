@@ -20,7 +20,28 @@ def weighted_loss(y_true, y_pred):
     error = K.abs(y_true - y_pred)
     weight = K.exp(-0.05 * y_true)  # Küçük S21 değerlerine daha fazla ağırlık ver
     return K.mean(weight * error)   
+ 
 
+
+
+
+
+
+
+
+""" def weighted_loss(y_true, y_pred):
+    error = K.abs(y_true - y_pred)  # Mutlak hata hesaplanıyor
+
+    # Dip noktalara daha fazla ağırlık veren fonksiyon
+    weight = K.exp(-0.06 * K.abs(y_true))
+
+    # Gradyan hesabı (yaklaşık türev)
+    dy_dx = K.abs(y_pred[:, 1:] - y_pred[:, :-1])  # Fark alarak yaklaşık türev
+    gradient_penalty = K.mean(dy_dx, axis=-1)  # Ortalama türev cezası hesapla
+
+    # Toplam loss hesaplanıyor
+    loss = K.mean(weight * error) + (0.1 * K.mean(gradient_penalty))  # λ=0.1 ağırlıklandırma
+    return loss """
 
 
 
@@ -49,7 +70,8 @@ def weighted_loss(y_true, y_pred):
 def load_data_in_order(image_folder, csv_folder, max_length=101):
     image_files = sorted([f for f in os.listdir(image_folder) if not f.startswith('.')], key=str.lower)
     csv_files = sorted([f for f in os.listdir(csv_folder) if not f.startswith('.') and not f.endswith('.ipynb_checkpoints')], key=str.lower)
-
+    print(f"Input resim sayısı: {len(image_files)}")
+    print(f"csv sayısı: {len(csv_files)}")
     if len(image_files) != len(csv_files):
         raise ValueError("Görüntü ve CSV dosyalarının sayısı eşleşmiyor!")
 
@@ -112,7 +134,7 @@ lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(
 )
  # Modeli derle (Ağırlıklı Kayıp Fonksiyonuyla)
 model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=lr_schedule),
-              loss=weighted_loss,
+              loss=weighted_derivative_loss,
               metrics=['mae']) 
 
 """ model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.001),
@@ -133,7 +155,7 @@ early_stopping = EarlyStopping(
 # Modeli Eğitme
 history = model.fit(
     X_train, y_train_flat,
-    epochs=40,
+    epochs=100,
     batch_size=16,
     validation_data=(X_test, y_test_flat),
     callbacks=[early_stopping],
@@ -178,5 +200,5 @@ plt.tight_layout()
 plt.show()
 
 # Modeli kaydet
-model.save("C:/Users/atade/Desktop/test_sonuçları/VGG16+TEST/model/VGG16_feature_extracted_model_WeightedLossekstra.keras")
+model.save("C:/Users/atade/Desktop/test_sonuçları/VGG16+TEST/model/VGG16_feature_extracted_model_Yeni2000_turevliepoch.keras")
 print("Model '.keras' formatında kaydedildi.")
