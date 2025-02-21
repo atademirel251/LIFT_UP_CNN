@@ -57,7 +57,7 @@ _, X_test, _, y_test = train_test_split(X_data, y_data, test_size=0.2, random_st
 
 # Modeli yükle
 #model_path = r"C:\Users\atade\Desktop\test_sonuçları\VGG16+TEST\model\bestweıghterd055.keras"
-model_path = r"C:/Users/atade/Desktop/test_sonuçları/VGG16+TEST/model/VGG16_feature_extracted_model_Yeni2500_turevliepochSON.keras"
+model_path = r"C:/Users/atade/Desktop/test_sonuçları/VGG16+TEST/model/Yeni3200_turevliepochSON.keras"
 loaded_model = tf.keras.models.load_model(model_path, custom_objects={'weighted_loss':None})
 print(f"Model başarıyla yüklendi: {model_path}")
 print(loaded_model.output_shape)

@@ -125,6 +125,7 @@ early_stopping = EarlyStopping(
 history = model.fit(
     X_train, y_train_flat,  # Eğitim verisini doğrudan kullan
     epochs=100,
+    batch_size =16,
     validation_data=(X_test, y_test_flat),
     callbacks=[early_stopping, reduce_lr],  # ReduceLROnPlateau eklendi
     verbose=1
@@ -180,5 +181,5 @@ mape_score = mean_absolute_percentage_error(y_test, preds)
 print(f"Test Seti İçin MAPE: {mape_score:.2f}%")
 
 # Modeli kaydet
-model.save("C:/Users/atade/Desktop/test_sonuçları/VGG16+TEST/model/VGG16_feature_extracted_model_Yeni2500_turevliepochSON.keras")
+model.save("C:/Users/atade/Desktop/test_sonuçları/VGG16+TEST/model/Yeni3200_turevliepochSON.keras")
 print("Model '.keras' formatında kaydedildi.")
