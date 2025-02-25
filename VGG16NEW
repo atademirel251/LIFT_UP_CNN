@@ -16,34 +16,33 @@ tf.config.experimental.set_memory_growth(physical_devices[0], True)
 
 
 # Veri Hazırlığı (Normalizasyon ile)
-def load_data_in_order(image_folder, csv_folder, max_length=102):
-    # Görüntü ve CSV dosyalarını sıralı bir şekilde yükle
+def load_data_in_order(image_folder, csv_folder, max_length=101):
     image_files = sorted([f for f in os.listdir(image_folder) if not f.startswith('.')], key=str.lower)
     csv_files = sorted([f for f in os.listdir(csv_folder) if not f.startswith('.') and not f.endswith('.ipynb_checkpoints')], key=str.lower)
-
-    # Görüntü ve CSV dosyalarının sayısı eşleşmiyorsa hata ver
+    
     if len(image_files) != len(csv_files):
         raise ValueError("Görüntü ve CSV dosyalarının sayısı eşleşmiyor!")
 
-    images = []
-    outputs = []
-
-    # Her bir görüntü ve CSV dosyasını işle
+    images, outputs = [], []
     for img_file, csv_file in zip(image_files, csv_files):
-        # Görüntüyü yükle ve normalize et
         image_path = os.path.join(image_folder, img_file)
-        image = Image.open(image_path)
-        image_array = np.array(image) / 255.0  # Normalizasyon (0-1 aralığı)
+        image = Image.open(image_path)  # Görüntüyü aç
+        w, h = image.size  # Orijinal genişlik ve yükseklik
+
+        # Çeyrek bölgeyi al (sol üst köşe)
+        quarter_image = image.crop((0, 0, w // 2, h // 2))
+
+        # Çeyrek bölgeyi 32x32 boyutuna getir
+        resized_image = quarter_image.resize((64, 64))
+
+        # NumPy array'e çevir ve normalleştir
+        image_array = np.array(resized_image) / 255.0
         images.append(image_array)
 
-        # CSV dosyasını yükle ve S21 parametrelerini al
         csv_path = os.path.join(csv_folder, csv_file)
         csv_data = pd.read_csv(csv_path, usecols=[0, 1], skiprows=1, header=None).values
-        freq = csv_data[:, 0]
-        s21 = csv_data[:, 1]
-        combined = np.column_stack((freq, s21))
+        combined = np.column_stack((csv_data[:, 0], csv_data[:, 1]))
 
-        # Veriyi max_length'e göre ya kırp ya da doldur
         if len(combined) > max_length:
             combined = combined[:max_length]
         elif len(combined) < max_length:
@@ -52,24 +51,21 @@ def load_data_in_order(image_folder, csv_folder, max_length=102):
 
         outputs.append(combined)
 
-    # Görüntü ve çıktıları numpy dizisine dönüştür
-    images = np.array(images, dtype=np.float32)  # Görüntülerin son boyutu (128, 128, 3)
-    outputs = np.array(outputs, dtype=np.float32)
+    return np.array(images, dtype=np.float32), np.array(outputs, dtype=np.float32)
 
-    return images, outputs
 
-# Veri klasörlerini tanımla
-image_folder = "C:/Users/atade/Desktop/1000verısetı/input_Resşm"
-csv_folder = "C:/Users/atade/Desktop/1000verısetı/csv"
+# Veri klasörleri
+image_folder = r"C:\Users\atade\Desktop\5000veri\input_Resim"
+csv_folder = r"C:\Users\atade\Desktop\5000veri\csv"
 
 # Veriyi yükle
-images, s21_params = load_data_in_order(image_folder, csv_folder, max_length=102)
+images, s21_params = load_data_in_order(image_folder, csv_folder, max_length=101)
 
 # Veriyi eğitim ve test setlerine ayır
 X_train, X_test, y_train, y_test = train_test_split(images, s21_params, test_size=0.2, random_state=42)
 
 # Pre-trained VGG16 Modeli ile Özellik Çıkartma
-base_model = VGG16(weights='imagenet', include_top=False, input_shape=(128, 128, 3))  # include_top=False, son katmanları çıkar
+base_model = VGG16(weights='imagenet', include_top=False, input_shape=(64, 64, 3))  # include_top=False, son katmanları çıkar
 base_model.trainable = False  # Pre-trained katmanları dondur
 
 # Özellik çıkarıcı model

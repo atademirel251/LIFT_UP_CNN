@@ -9,14 +9,14 @@ def rename_png_files(directory):
     
     for i, filename in enumerate(png_files, start=1):
         old_path = os.path.join(directory, filename)
-        new_filename = f"L{i}.png"
+        new_filename = f"Eren{i}.png"
         new_path = os.path.join(directory, new_filename)
         os.rename(old_path, new_path)
         print(f"Renamed: {filename} -> {new_filename}")
 
 
 # Kullanım
-directory = r"C:\Users\atade\Desktop\Eren+Veri\resim\Model_Eğitim_Binary_13-20250221T162508Z-001\Model_Eğitim_Binary_13"  # Mevcut dizini kullanır, gerekirse değiştirin
+directory = r"C:\Users\atade\Desktop\erenmodel2\Resim"  # Mevcut dizini kullanır, gerekirse değiştirin
 
 
 rename_png_files(directory)

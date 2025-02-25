@@ -45,8 +45,8 @@ def process_images(input_folder, output_folder, pixel_size):
             print(f"Processed and saved: {output_path}")
 
 # Giriş ve çıkış klasörlerini belirleyin
-input_folder = r"C:\Users\atade\Desktop\Eren+Veri\resim\Resim" # Giriş klasörü
-output_folder = r"C:\Users\atade\Desktop\Eren+Veri\resim\PikkselizeresimEren21subat" # Çıkış klasörü
+input_folder = r"C:\Users\atade\Desktop\erenmodel2\Resim" # Giriş klasörü
+output_folder = r"C:\Users\atade\Desktop\erenmodel2\PikselizeErenresim" # Çıkış klasörü
 pixel_size = 10  # Piksel boyutu
 
 # Görüntüleri işleme

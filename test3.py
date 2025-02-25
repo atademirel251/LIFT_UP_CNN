@@ -4,9 +4,9 @@ import pandas as pd
 import tensorflow as tf
 import matplotlib.pyplot as plt
 from PIL import Image
-import tensorflow.keras.backend as K
-# Veri Hazırlığı Fonksiyonu
+from sklearn.model_selection import train_test_split
 
+# Veri Hazırlığı Fonksiyonu
 def load_data_in_order(image_folder, csv_folder, max_length=101):
     image_files = sorted([f for f in os.listdir(image_folder) if not f.startswith('.')], key=str.lower)
     csv_files = sorted([f for f in os.listdir(csv_folder) if not f.startswith('.') and not f.endswith('.ipynb_checkpoints')], key=str.lower)
@@ -42,7 +42,6 @@ def load_data_in_order(image_folder, csv_folder, max_length=101):
     
     return images, outputs
 
-# Veri klasörleri
 image_folder = r"C:\Users\atade\Desktop\5000veri\input_Resim"
 csv_folder = r"C:\Users\atade\Desktop\5000veri\csv"
 
@@ -50,33 +49,41 @@ csv_folder = r"C:\Users\atade\Desktop\5000veri\csv"
 X_data, y_data = load_data_in_order(image_folder, csv_folder, max_length=101)
 
 # Test setini oluştur
-from sklearn.model_selection import train_test_split
 _, X_test, _, y_test = train_test_split(X_data, y_data, test_size=0.2, random_state=42, shuffle=True)
 
-
-
 # Modeli yükle
-#model_path = r"C:\Users\atade\Desktop\test_sonuçları\VGG16+TEST\model\bestweıghterd055.keras"
 model_path = r"C:/Users/atade/Desktop/test_sonuçları/VGG16+TEST/model/Yeni5100_turevliepochSON.keras"
-loaded_model = tf.keras.models.load_model(model_path, custom_objects={'weighted_loss':None})
+loaded_model = tf.keras.models.load_model(model_path, custom_objects={'weighted_loss': None})
 print(f"Model başarıyla yüklendi: {model_path}")
 print(loaded_model.output_shape)
 
 # Test verisiyle tahmin yap
-example_index = 121# Örnek test verisi seç
+example_index = 932  # Test verisi örneği seç
 example_input = X_test[example_index]  # Test girdisi
 example_output = y_test[example_index]  # Gerçek çıktı
 
+def crop_image(image, fraction=0.5):
+    height, width, _ = image.shape
+    new_height, new_width = int(height * fraction), int(width * fraction)
+    return image[:new_height, :new_width]
+
+# Test verisini kırp
+example_input_cropped = crop_image(example_input, fraction=0.5)  # Görüntüyü sol üst çeyreğe kırp
+
 # Model tahmini
-predicted_output = loaded_model.predict(example_input[np.newaxis, ...])[0].reshape(-1, 2)
+example_input_cropped_resized = tf.image.resize(example_input_cropped, (32, 32))  # Boyutlandırma
+example_input_cropped_resized = np.expand_dims(example_input_cropped_resized, axis=0)  # (1, 32, 32, 3) şeklinde
+
+predicted_output = loaded_model.predict(example_input_cropped_resized)[0].reshape(-1, 2)
+
 
 # Grafikler
 plt.figure(figsize=(14, 6))
 
 # Test girdisini göster
 plt.subplot(1, 2, 1)
-plt.imshow(example_input)
-plt.title("Test Girdisi (Geometrik Desen)")
+plt.imshow(example_input_cropped_resized[0])  # Kırpılmış resmi göster
+plt.title("Test Girdisi (Kırpılmış Çeyrek)")
 plt.axis('off')
 
 # Gerçek ve tahmini değerleri karşılaştır
