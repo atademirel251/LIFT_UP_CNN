@@ -11,6 +11,8 @@ from PIL import Image
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
 import tensorflow.keras.backend as K
 from tensorflow.keras.models import load_model
+from scipy.interpolate import interp1d
+
 
 # GPU Bellek Yönetimi
 physical_devices = tf.config.list_physical_devices('GPU')
@@ -32,7 +34,9 @@ def weighted_loss(y_true, y_pred):
     loss = K.mean(weight * error) + (0.2 * gradient_penalty)  # λ=0.2
     return loss 
 
-def load_data_in_order(image_folder, csv_folder, max_length=101):
+
+
+def load_data_in_order(image_folder, csv_folder, max_length=101, local_min_threshold=0.2):
     image_files = sorted([f for f in os.listdir(image_folder) if not f.startswith('.')], key=str.lower)
     csv_files = sorted([f for f in os.listdir(csv_folder) if not f.startswith('.') and not f.endswith('.ipynb_checkpoints')], key=str.lower)
     
@@ -48,7 +52,7 @@ def load_data_in_order(image_folder, csv_folder, max_length=101):
         # Çeyrek bölgeyi al (sol üst köşe)
         quarter_image = image.crop((0, 0, w // 2, h // 2))
 
-        # Çeyrek bölgeyi 32x32 boyutuna getir
+        # Çeyrek bölgeyi 64x64 boyutuna getir
         resized_image = quarter_image.resize((64, 64))
 
         # NumPy array'e çevir ve normalleştir
@@ -59,6 +63,30 @@ def load_data_in_order(image_folder, csv_folder, max_length=101):
         csv_data = pd.read_csv(csv_path, usecols=[0, 1], skiprows=1, header=None).values
         combined = np.column_stack((csv_data[:, 0], csv_data[:, 1]))
 
+        # Yerel minimumları bul ve interpolasyon yap
+        x = combined[:, 0]
+        y = combined[:, 1]
+
+        # Yerel minimumları tespit et (bunu basit bir örnekle yapıyoruz)
+        local_min_indices = np.where(np.diff(np.sign(np.diff(y))) > 0)[0] + 1
+        
+        for idx in local_min_indices:
+            # Yerel minimum bölgelerinde veriyi sıklaştır
+            if idx > 0 and idx < len(x) - 1:
+                # Bu bölgedeki veriyi sıklaştırmak için interpolasyon yapılacak aralık
+                local_x = x[idx-6:idx+6]     #  local_x = x[idx-1:idx+2]
+                                            #local_y = y[idx-1:idx+2] 
+                local_y = y[idx-6:idx+6]
+
+                # Linear interpolasyon ile yeni veriler ekleyelim
+                interp_x = np.linspace(local_x[0], local_x[-1], 7)  # 5 nokta olarak interpolate edelim
+                interp_y = np.interp(interp_x, local_x, local_y)
+
+                # Yeni interpolasyonlu veriyi orijinal veriye ekleyelim
+                new_data = np.column_stack((interp_x, interp_y))
+                combined = np.vstack((combined[:idx-1], new_data, combined[idx+2:]))
+
+        # max_length'e göre kısıtlama
         if len(combined) > max_length:
             combined = combined[:max_length]
         elif len(combined) < max_length:
@@ -67,9 +95,13 @@ def load_data_in_order(image_folder, csv_folder, max_length=101):
 
         outputs.append(combined)
 
-    return np.array(images, dtype=np.float32), np.array(outputs, dtype=np.float32)
+    return np.array(images, dtype=np.float32), np.array(outputs, dtype=np.float32) 
 
-# Veri klasörleri
+
+
+
+
+ # Veri klasörleri
 image_folder = r"C:\Users\atade\Desktop\5000veri\input_Resim"
 csv_folder = r"C:\Users\atade\Desktop\5000veri\csv"
 
@@ -77,13 +109,13 @@ csv_folder = r"C:\Users\atade\Desktop\5000veri\csv"
 images, s21_params = load_data_in_order(image_folder, csv_folder, max_length=101)
 
 # Veriyi eğitim ve test setlerine ayır
-X_train, X_test, y_train, y_test = train_test_split(images, s21_params, test_size=0.2, random_state=42)
-
-""" # Pre-trained VGG16 Modeli
+X_train, X_test, y_train, y_test = train_test_split(images, s21_params, test_size=0.2, random_state=42) 
+ 
+"""      # Pre-trained VGG16 Modeli
 base_model = VGG16(weights='imagenet', include_top=False, input_shape=(64, 64, 3))
 
 # Son birkaç katmanı eğitilebilir yap
-for layer in base_model.layers[:-4]:  # İlk katmanları dondur, sadece son 4'ü eğit
+for layer in base_model.layers[:-15]:  # İlk katmanları dondur, sadece son 4'ü eğit
     layer.trainable = False
 
 # Modelin yeni katmanlarını ekle
@@ -109,13 +141,13 @@ reduce_lr = ReduceLROnPlateau(
 # Modeli derle (Ağırlıklı Kayıp Fonksiyonuyla)
 model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.001),
               loss=weighted_loss,
-              metrics=['mae']) """
+              metrics=['mae']) 
 
-""" # Veriyi uygun şekilde düzleştir
+ # Veriyi uygun şekilde düzleştir
 y_train_flat = y_train.reshape(y_train.shape[0], -1)
 y_test_flat = y_test.reshape(y_test.shape[0], -1)
- """
-""" # Early Stopping
+ 
+ # Early Stopping
 early_stopping = EarlyStopping(
     monitor='val_loss',  
     patience=10,         
@@ -174,46 +206,50 @@ def mean_absolute_percentage_error(y_true, y_pred):
 preds = model.predict(X_test).reshape(y_test.shape)
 mape_score = mean_absolute_percentage_error(y_test, preds)
 print(f"Test Seti İçin MAPE: {mape_score:.2f}%")
- """
 
-""" 
+
+
 # Modeli kaydet
-model.save("C:/Users/atade/Desktop/test_sonuçları/VGG16+TEST/model/Yeni5100_64x64.keras")
-print("Model '.keras' formatında kaydedildi.") """
- 
+model.save("C:/Users/atade/Desktop/test_sonuçları/VGG16+TEST/model/Yeni5100_64x64+15katman+ınterpolatıon7.keras")
+print("Model '.keras' formatında kaydedildi.")    """ 
+  
 
 
 
 
 
 
- 
-""" 
-##### MODEL TEST ETME
-model = load_model("C:/Users/atade/Desktop/test_sonuçları/VGG16+TEST/model/Yeni5100_64x64.keras", custom_objects={'weighted_loss': weighted_loss})
 
 
-# Test seti ile tahmin yapma
-predictions = model.predict(X_test)
 
-# Test verisi ve tahminlerin karşılaştırılması
-plt.figure(figsize=(14, 6))
 
-# Örnek test verisi
-example_index = 89
+model_path = "C:/Users/atade/Desktop/test_sonuçları/VGG16+TEST/model/Yeni5100_64x64+15katman+interpolation.keras"
+model = tf.keras.models.load_model(model_path, custom_objects={"weighted_loss": weighted_loss})
+
+ #Modeli kullanarak tahmin yap
+y_pred = model.predict(X_test).reshape(y_test.shape)
+
+# MAPE hesaplama fonksiyonu
+def mean_absolute_percentage_error(y_true, y_pred):
+    return np.mean(np.abs((y_true - y_pred) / (y_true + 1e-8))) * 100
+
+# Test seti üzerinde MAPE hesapla
+mape_score = mean_absolute_percentage_error(y_test, y_pred)
+print(f"Test Seti İçin MAPE: {mape_score:.2f}%") 
+
+ # Örnek bir test girdisi ve tahmini görselleştirme
+example_index = 275
 example_input = X_test[example_index]
 example_output = y_test[example_index]
+predicted_output = y_pred[example_index]
 
-# Gerçek değerler ve tahminler
-predicted_output = predictions[example_index].reshape(-1, 2)
+plt.figure(figsize=(14, 6))
 
-# Görsel 1: Test Girdisi
 plt.subplot(1, 2, 1)
 plt.imshow(example_input.squeeze(), cmap='gray')
 plt.title("Test Girdisi (Geometrik Desen)")
 plt.axis('off')
 
-# Görsel 2: Gerçek ve Tahmin Değerlerini Karşılaştırma
 plt.subplot(1, 2, 2)
 plt.plot(example_output[:, 0], example_output[:, 1], label="Gerçek Değer", linestyle='none', marker='o', alpha=0.7)
 plt.plot(predicted_output[:, 0], predicted_output[:, 1], label="Tahmin Değer", linestyle='none', marker='x', alpha=0.7)
@@ -222,6 +258,14 @@ plt.ylabel("S21 Parametre Değeri")
 plt.title("Gerçek ve Tahmini S21 Grafiği")
 plt.legend()
 plt.grid(True)
+plt.grid(True)
 
 plt.tight_layout()
-plt.show() """
+plt.show() 
+
+
+
+
+
+
+
