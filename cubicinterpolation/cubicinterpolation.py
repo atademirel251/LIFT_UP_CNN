@@ -12,13 +12,7 @@ from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
 import tensorflow.keras.backend as K
 from tensorflow.keras.models import load_model
 from scipy.interpolate import interp1d
-
-
-# GPU Bellek Yönetimi
-physical_devices = tf.config.list_physical_devices('GPU')
-tf.config.experimental.set_memory_growth(physical_devices[0], True)
-
- # Ağırlıklı Kayıp Fonksiyonu (Dip Noktalara Önem Ver)
+# Ağırlıklı Kayıp Fonksiyonu (Dip Noktalara Önem Ver)
 def weighted_loss(y_true, y_pred):
     error = K.abs(y_true - y_pred)
 
@@ -35,8 +29,7 @@ def weighted_loss(y_true, y_pred):
     return loss 
 
 
-
-def load_data_in_order(image_folder, csv_folder, max_length=101, local_min_threshold=0.2):
+def load_data_in_order(image_folder, csv_folder, max_length=101):
     image_files = sorted([f for f in os.listdir(image_folder) if not f.startswith('.')], key=str.lower)
     csv_files = sorted([f for f in os.listdir(csv_folder) if not f.startswith('.') and not f.endswith('.ipynb_checkpoints')], key=str.lower)
     
@@ -46,62 +39,45 @@ def load_data_in_order(image_folder, csv_folder, max_length=101, local_min_thres
     images, outputs = [], []
     for img_file, csv_file in zip(image_files, csv_files):
         image_path = os.path.join(image_folder, img_file)
-        image = Image.open(image_path)  # Görüntüyü aç
-        w, h = image.size  # Orijinal genişlik ve yükseklik
-
-        # Çeyrek bölgeyi al (sol üst köşe)
+        image = Image.open(image_path)
+        w, h = image.size
+        
         quarter_image = image.crop((0, 0, w // 2, h // 2))
-
-        # Çeyrek bölgeyi 64x64 boyutuna getir
         resized_image = quarter_image.resize((64, 64))
-
-        # NumPy array'e çevir ve normalleştir
         image_array = np.array(resized_image) / 255.0
         images.append(image_array)
-
+        
         csv_path = os.path.join(csv_folder, csv_file)
         csv_data = pd.read_csv(csv_path, usecols=[0, 1], skiprows=1, header=None).values
         combined = np.column_stack((csv_data[:, 0], csv_data[:, 1]))
-
-        # Yerel minimumları bul ve interpolasyon yap
+        
         x = combined[:, 0]
         y = combined[:, 1]
-
-        # Yerel minimumları tespit et (bunu basit bir örnekle yapıyoruz)
-        local_min_indices = np.where(np.diff(np.sign(np.diff(y))) > 0)[0] + 1
+        
+        local_min_indices = np.where(np.r_[False, y[1:] < y[:-1]] & np.r_[y[:-1] < y[1:], False])[0]
         
         for idx in local_min_indices:
-            # Yerel minimum bölgelerinde veriyi sıklaştır
-            if idx > 0 and idx < len(x) - 1:
-                # Bu bölgedeki veriyi sıklaştırmak için interpolasyon yapılacak aralık
-                local_x = x[idx-1:idx+2]
-                local_y = y[idx-1:idx+2] 
+            if 3 <= idx < len(x) - 3:
+                local_x = x[idx-3:idx+4]
+                local_y = y[idx-3:idx+4]
                 
-
-                # Linear interpolasyon ile yeni veriler ekleyelim
-                interp_x = np.linspace(local_x[0], local_x[-1], 7)  # 5 nokta olarak interpolate edelim
-                interp_y = np.interp(interp_x, local_x, local_y)
-
-                # Yeni interpolasyonlu veriyi orijinal veriye ekleyelim
+                interp_func = interp1d(local_x, local_y, kind='cubic')
+                interp_x = np.linspace(local_x[0], local_x[-1], 10)
+                interp_y = interp_func(interp_x)
+                
                 new_data = np.column_stack((interp_x, interp_y))
-                combined = np.vstack((combined[:idx-1], new_data, combined[idx+2:]))
-
-        # max_length'e göre kısıtlama
+                combined = np.vstack((combined[:idx], new_data, combined[idx+1:]))
+        
         if len(combined) > max_length:
             combined = combined[:max_length]
         elif len(combined) < max_length:
             pad = np.zeros((max_length - len(combined), 2))
             combined = np.vstack((combined, pad))
-
+        
         outputs.append(combined)
-
-    return np.array(images, dtype=np.float32), np.array(outputs, dtype=np.float32) 
-
-
-
-
-
- # Veri klasörleri
+    
+    return np.array(images, dtype=np.float32), np.array(outputs, dtype=np.float32)
+# Veri klasörleri
 image_folder = r"C:\Users\atade\Desktop\5000veri\input_Resim"
 csv_folder = r"C:\Users\atade\Desktop\5000veri\csv"
  # Veri klasörleri
@@ -213,62 +189,7 @@ print(f"Test Seti İçin MAPE: {mape_score:.2f}%")
 
 
 # Modeli kaydet
-model.save("C:/Users/atade/Desktop/test_sonuçları/VGG16+TEST/model/Yeni5100_64x64+15katman+ınterpolatıon7.keras")
+model.save("C:/Users/atade/Desktop/test_sonuçları/VGG16+TEST/model/Yeni5100_64x64+15katmancubicinterpolation.keras")
 print("Model '.keras' formatında kaydedildi.")    
   
-
-
-
-
-
-
-
-
-
-
-""" model_path = "C:/Users/atade/Desktop/test_sonuçları/VGG16+TEST/model/Yeni5100_64x64+15katman+interpolation.keras"
-model = tf.keras.models.load_model(model_path, custom_objects={"weighted_loss": weighted_loss})
-
- #Modeli kullanarak tahmin yap
-y_pred = model.predict(X_test).reshape(y_test.shape)
-
-# MAPE hesaplama fonksiyonu
-def mean_absolute_percentage_error(y_true, y_pred):
-    return np.mean(np.abs((y_true - y_pred) / (y_true + 1e-8))) * 100
-
-# Test seti üzerinde MAPE hesapla
-mape_score = mean_absolute_percentage_error(y_test, y_pred)
-print(f"Test Seti İçin MAPE: {mape_score:.2f}%") 
-
- # Örnek bir test girdisi ve tahmini görselleştirme
-example_index = 20
-example_input = X_test[example_index]
-example_output = y_test[example_index]
-predicted_output = y_pred[example_index]
-
-plt.figure(figsize=(14, 6))
-
-plt.subplot(1, 2, 1)
-plt.imshow(example_input.squeeze(), cmap='gray')
-plt.title("Test Girdisi (Geometrik Desen)")
-plt.axis('off')
-
-plt.subplot(1, 2, 2)
-plt.plot(example_output[:, 0], example_output[:, 1], label="Gerçek Değer", linestyle='-', marker='o', alpha=0.7)
-plt.plot(predicted_output[:, 0], predicted_output[:, 1], label="Tahmin Değer", linestyle='-', marker='x', alpha=0.7)
-plt.xlabel("Frekans (GHz)")
-plt.ylabel("S21 Parametre Değeri")
-plt.title("Gerçek ve Tahmini S21 Grafiği")
-plt.legend()
-plt.grid(True)
-plt.grid(True)
-
-plt.tight_layout()
-plt.show() 
- """
-
-
-
-
-
 
