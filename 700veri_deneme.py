@@ -12,13 +12,13 @@ from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
 import tensorflow.keras.backend as K
 from tensorflow.keras.models import load_model
 from scipy.interpolate import interp1d
-
+from natsort import natsorted  # natsort kütüphanesini ekleyin
 
 # GPU Bellek Yönetimi
 physical_devices = tf.config.list_physical_devices('GPU')
 tf.config.experimental.set_memory_growth(physical_devices[0], True)
 
- # Ağırlıklı Kayıp Fonksiyonu (Dip Noktalara Önem Ver)
+# Ağırlıklı Kayıp Fonksiyonu (Dip Noktalara Önem Ver)
 def weighted_loss(y_true, y_pred):
     error = K.abs(y_true - y_pred)
 
@@ -34,14 +34,29 @@ def weighted_loss(y_true, y_pred):
     loss = K.mean(weight * error) + (0.2 * gradient_penalty)  # λ=0.2
     return loss 
 
-
-
+# Veri yükleme fonksiyonu
 def load_data_in_order(image_folder, csv_folder, max_length=101, local_min_threshold=0.2):
-    image_files = sorted([f for f in os.listdir(image_folder) if not f.startswith('.')], key=str.lower)
-    csv_files = sorted([f for f in os.listdir(csv_folder) if not f.startswith('.') and not f.endswith('.ipynb_checkpoints')], key=str.lower)
+    # Dosyaları doğal sıralama ile sırala
+    image_files = natsorted(
+    [f for f in os.listdir(image_folder) if f.endswith(('.jpg', '.jpeg', '.png'))],
+    key=lambda x: x.lower()  # Büyük/küçük harf duyarlılığını kaldır
+)
+    csv_files = natsorted(
+    [f for f in os.listdir(csv_folder) if f.endswith('.csv')],
+    key=lambda x: x.lower()  # Büyük/küçük harf duyarlılığını kaldır
+)
+
     
     if len(image_files) != len(csv_files):
         raise ValueError("Görüntü ve CSV dosyalarının sayısı eşleşmiyor!")
+
+    # image_files ve csv_files listelerini Excel'e kaydet
+    file_mapping = pd.DataFrame({
+        "Image Files": image_files,
+        "CSV Files": csv_files
+    })
+    file_mapping.to_excel("C:/Users/atade/Desktop/test_sonuçları/file_mapping.xlsx", index=False)
+    print("Dosya eşleştirmesi 'file_mapping.xlsx' olarak kaydedildi.")
 
     images, outputs = [], []
     for img_file, csv_file in zip(image_files, csv_files):
@@ -97,14 +112,9 @@ def load_data_in_order(image_folder, csv_folder, max_length=101, local_min_thres
 
     return np.array(images, dtype=np.float32), np.array(outputs, dtype=np.float32) 
 
-
-
-
-
- # Veri klasörleri
+# Veri klasörleri
 image_folder = r"C:\Users\atade\Desktop\7231VERI_SIRALANMIS\input_Resim"
 csv_folder = r"C:\Users\atade\Desktop\7231VERI_SIRALANMIS\csv"
-
 
 # Veriyi yükle
 images, s21_params = load_data_in_order(image_folder, csv_folder, max_length=101)
@@ -114,8 +124,8 @@ X_train, X_test, y_train, y_test = train_test_split(images, s21_params, test_siz
 
 np.savez("C:/Users/atade/Desktop/test_sonuçları/dataset.npz", X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test)
 print("Veri seti '.npz' formatında kaydedildi.")
- 
-       # Pre-trained VGG16 Modeli
+
+# Pre-trained VGG16 Modeli
 base_model = VGG16(weights='imagenet', include_top=False, input_shape=(64, 64, 3))
 
 # Son birkaç katmanı eğitilebilir yap
@@ -130,8 +140,8 @@ x = Dropout(0.5)(x)  # Dropout artır (0.4 → 0.5)
 x = Dense(1024, activation='relu')(x)
 x = Dropout(0.3)(x)  # Ekstra dropout
 output = Dense(s21_params.shape[1] * s21_params.shape[2], activation='linear')(x)
- 
- # Yeni modeli oluştur
+
+# Yeni modeli oluştur
 model = Model(inputs=model_input, outputs=output)
 
 # ReduceLROnPlateau Callback
@@ -147,11 +157,11 @@ model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.001),
               loss=weighted_loss,
               metrics=['mae']) 
 
- # Veriyi uygun şekilde düzleştir
+# Veriyi uygun şekilde düzleştir
 y_train_flat = y_train.reshape(y_train.shape[0], -1)
 y_test_flat = y_test.reshape(y_test.shape[0], -1)
- 
- # Early Stopping
+
+# Early Stopping
 early_stopping = EarlyStopping(
     monitor='val_loss',  
     patience=10,         
@@ -167,7 +177,7 @@ history = model.fit(
     verbose=1
 ) 
 
- # Eğitim ve Doğrulama Kaybı Grafiği
+# Eğitim ve Doğrulama Kaybı Grafiği
 plt.figure(figsize=(10, 6))
 plt.plot(history.history['loss'], label='Eğitim Kaybı', linestyle='-', marker='o', alpha=0.7)
 plt.plot(history.history['val_loss'], label='Doğrulama Kaybı', linestyle='--', marker='x', alpha=0.7)
@@ -211,65 +221,6 @@ preds = model.predict(X_test).reshape(y_test.shape)
 mape_score = mean_absolute_percentage_error(y_test, preds)
 print(f"Test Seti İçin MAPE: {mape_score:.2f}%")
 
-
-
 # Modeli kaydet
-model.save("C:/Users/atade/Desktop/test_sonuçları/VGG16+TEST/model/Yeni5500_64x64+15katman+ınterpolatıon7.keras")
-print("Model '.keras' formatında kaydedildi.")    
-  
-
-
-
-
-
-
-
-
-""" 
-
-model_path = "C:/Users/atade/Desktop/test_sonuçları/VGG16+TEST/model/Yeni5100_64x64+15katman+interpolation.keras"
-model = tf.keras.models.load_model(model_path, custom_objects={"weighted_loss": weighted_loss})
-
- #Modeli kullanarak tahmin yap
-y_pred = model.predict(X_test).reshape(y_test.shape)
-
-# MAPE hesaplama fonksiyonu
-def mean_absolute_percentage_error(y_true, y_pred):
-    return np.mean(np.abs((y_true - y_pred) / (y_true + 1e-8))) * 100
-
-# Test seti üzerinde MAPE hesapla
-mape_score = mean_absolute_percentage_error(y_test, y_pred)
-print(f"Test Seti İçin MAPE: {mape_score:.2f}%") 
-
- # Örnek bir test girdisi ve tahmini görselleştirme
-example_index = 31
-example_input = X_test[example_index]
-example_output = y_test[example_index]
-predicted_output = y_pred[example_index]
-
-plt.figure(figsize=(14, 6))
-
-plt.subplot(1, 2, 1)
-plt.imshow(example_input.squeeze(), cmap='gray')
-plt.title("Test Girdisi (Geometrik Desen)")
-plt.axis('off')
-
-plt.subplot(1, 2, 2)
-plt.plot(example_output[:, 0], example_output[:, 1], label="Gerçek Değer", linestyle='-', marker='o', alpha=0.7)
-plt.plot(predicted_output[:, 0], predicted_output[:, 1], label="Tahmin Değer", linestyle='-', marker='x', alpha=0.7)
-plt.xlabel("Frekans (GHz)")
-plt.ylabel("S21 Parametre Değeri")
-plt.title("Gerçek ve Tahmini S21 Grafiği")
-plt.legend()
-plt.grid(True)
-plt.grid(True)
-
-plt.tight_layout()
-plt.show() 
-
- """
-
-
-
-
-
+model.save("C:/Users/atade/Desktop/test_sonuçları/VGG16+TEST/model/Yeni7231_64x64+15katman+ınterpolatıon7.keras")
+print("Model '.keras' formatında kaydedildi.")

@@ -11,6 +11,7 @@ from PIL import Image
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
 import tensorflow.keras.backend as K
 from tensorflow.keras.models import load_model
+from natsort import natsorted 
 
 
 # GPU Bellek Yönetimi
@@ -28,52 +29,19 @@ def weighted_loss(y_true, y_pred):
     return loss 
 
 
-""" # Güncellenmiş Veri Yükleme Fonksiyonu
-def load_data_in_order(image_folder, csv_folder, max_length=101):
-    image_files = sorted([f for f in os.listdir(image_folder) if not f.startswith('.')], key=str.lower)
-    csv_files = sorted([f for f in os.listdir(csv_folder) if not f.startswith('.') and not f.endswith('.ipynb_checkpoints')], key=str.lower)
-    
-    if len(image_files) != len(csv_files):
-        raise ValueError("Görüntü ve CSV dosyalarının sayısı eşleşmiyor!")
 
-    images_original, images_edited, outputs = [], [], []
-    for img_file, csv_file in zip(image_files, csv_files):
-        image_path = os.path.join(image_folder, img_file)
-        image = Image.open(image_path)  # Orijinal görüntüyü aç
-
-        # **Orijinal görüntüyü kaydet**
-        image_original = np.array(image) / 255.0
-        images_original.append(image_original)
-
-        # **Çeyrek bölgeyi al (sol üst köşe)**
-        w, h = image.size
-        quarter_image = image.crop((0, 0, w // 2, h // 2))  # 128x128'den 64x64'e kes
-
-        # **Çeyrek bölgeyi 64x64 boyutuna küçült**
-        resized_image = quarter_image.resize((64, 64))
-        image_edited = np.array(resized_image) / 255.0
-        images_edited.append(image_edited)
-
-        # **CSV verisini al**
-        csv_path = os.path.join(csv_folder, csv_file)
-        csv_data = pd.read_csv(csv_path, usecols=[0, 1], skiprows=1, header=None).values
-        combined = np.column_stack((csv_data[:, 0], csv_data[:, 1]))
-
-        # max_length'e göre kısıtlama
-        if len(combined) > max_length:
-            combined = combined[:max_length]
-        elif len(combined) < max_length:
-            pad = np.zeros((max_length - len(combined), 2))
-            combined = np.vstack((combined, pad))
-
-        outputs.append(combined)
-
-    return np.array(images_original, dtype=np.float32), np.array(images_edited, dtype=np.float32), np.array(outputs, dtype=np.float32) """
 
 def load_data_in_order(image_folder, csv_folder, max_length=101, local_min_threshold=0.2):
-    image_files = sorted([f for f in os.listdir(image_folder) if not f.startswith('.')], key=str.lower)
-    csv_files = sorted([f for f in os.listdir(csv_folder) if not f.startswith('.') and not f.endswith('.ipynb_checkpoints')], key=str.lower)
-    
+    """ image_files = sorted([f for f in os.listdir(image_folder) if not f.startswith('.')], key=str.lower)
+    csv_files = sorted([f for f in os.listdir(csv_folder) if not f.startswith('.') and not f.endswith('.ipynb_checkpoints')], key=str.lower) """
+    image_files = natsorted(
+    [f for f in os.listdir(image_folder) if f.endswith(('.jpg', '.jpeg', '.png'))],
+    key=lambda x: x.lower()  # Büyük/küçük harf duyarlılığını kaldır
+)
+    csv_files = natsorted(
+    [f for f in os.listdir(csv_folder) if f.endswith('.csv')],
+    key=lambda x: x.lower()  # Büyük/küçük harf duyarlılığını kaldır
+)
     if len(image_files) != len(csv_files):
         raise ValueError("Görüntü ve CSV dosyalarının sayısı eşleşmiyor!")
 
@@ -128,8 +96,8 @@ def load_data_in_order(image_folder, csv_folder, max_length=101, local_min_thres
 
     return np.array(images_original, dtype=np.float32), np.array(images_edited, dtype=np.float32), np.array(outputs, dtype=np.float32)
 # Veri klasörleri
-image_folder = r"C:\Users\atade\Desktop\5000veri\input_Resim"
-csv_folder = r"C:\Users\atade\Desktop\5000veri\csv"
+image_folder = r"C:\Users\atade\Desktop\7231VERI_SIRALANMIS\input_Resim"
+csv_folder = r"C:\Users\atade\Desktop\7231VERI_SIRALANMIS\csv"
 
 # **Yeni veri yükleme fonksiyonu çağırılıyor**
 images_original, images_edited, s21_params = load_data_in_order(image_folder, csv_folder, max_length=101)
@@ -139,7 +107,7 @@ X_train, X_test, y_train, y_test = train_test_split(images_edited, s21_params, t
 
 
 # Modeli yükle
-model_path = "C:/Users/atade/Desktop/test_sonuçları/VGG16+TEST/model/Yeni5100_64x64+15katman+interpolation.keras"
+model_path = "C:/Users/atade/Desktop/test_sonuçları/VGG16+TEST/model/Yeni7231_64x64+15katman+ınterpolatıon7.keras"
 model = tf.keras.models.load_model(model_path, custom_objects={"weighted_loss": weighted_loss})
 
 # Modeli kullanarak tahmin yap
@@ -155,7 +123,7 @@ print(f"Test Seti İçin MAPE: {mape_score:.2f}%")
 
 
 # **Kullanıcıya 18. indeksin ORİJİNAL görüntüsünü göster**
-example_index = 40
+example_index = 482
 example_original = images_original[example_index]  # Orijinal görüntü (128x128)
 example_input = X_test[example_index]  # Modelin kullandığı görüntü (64x64)
 example_output = y_test[example_index]
@@ -172,8 +140,8 @@ plt.axis('off')
 
 # **Tahmini vs Gerçek Değeri Çiz**
 plt.subplot(1, 2, 2)
-plt.plot(example_output[:, 0], example_output[:, 1], label="Gerçek Değer", linestyle='-', marker='o', alpha=0.7)
-plt.plot(predicted_output[:, 0], predicted_output[:, 1], label="Tahmin Değer", linestyle='--', marker='x', alpha=0.7)
+plt.plot(example_output[:, 0], example_output[:, 1], label="Gerçek Değer", linestyle='none', marker='o', alpha=0.7)
+plt.plot(predicted_output[:, 0], predicted_output[:, 1], label="Tahmin Değer", linestyle='none', marker='x', alpha=0.7)
 plt.xlabel("Frekans (GHz)")
 plt.ylabel("S21 Parametre Değeri")
 plt.title("Gerçek ve Tahmini S21 Grafiği")
