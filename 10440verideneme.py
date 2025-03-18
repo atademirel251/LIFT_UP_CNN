@@ -51,14 +51,11 @@ def load_data_in_order(image_folder, csv_folder, max_length=101, local_min_thres
         raise ValueError("Görüntü ve CSV dosyalarının sayısı eşleşmiyor!")
 
     # image_files ve csv_files listelerini Excel'e kaydet
-    file_mapping = pd.DataFrame({
-        "Image Files": image_files,
-        "CSV Files": csv_files
-    })
-    file_mapping.to_excel("C:/Users/atade/Desktop/test_sonuçları/file_mapping.xlsx", index=False)
-    print("Dosya eşleştirmesi 'file_mapping.xlsx' olarak kaydedildi.")
+
 
     images, outputs = [], []
+    
+
     for img_file, csv_file in zip(image_files, csv_files):
         image_path = os.path.join(image_folder, img_file)
         image = Image.open(image_path)  # Görüntüyü aç
@@ -110,11 +107,11 @@ def load_data_in_order(image_folder, csv_folder, max_length=101, local_min_thres
 
         outputs.append(combined)
 
-    return np.array(images, dtype=np.float32), np.array(outputs, dtype=np.float32) 
+    return np.array(images, dtype=np.float32), np.array(outputs, dtype=np.float32)  
 
 # Veri klasörleri
-image_folder = r"C:\Users\atade\Desktop\7231VERI_SIRALANMIS\input_Resim"
-csv_folder = r"C:\Users\atade\Desktop\7231VERI_SIRALANMIS\csv"
+image_folder = r"C:\Users\atade\Desktop\9683_veri\input_Resim"
+csv_folder = r"C:\Users\atade\Desktop\9683_veri\csv"
 
 # Veriyi yükle
 images, s21_params = load_data_in_order(image_folder, csv_folder, max_length=101)
@@ -129,7 +126,7 @@ print("Veri seti '.npz' formatında kaydedildi.")
 base_model = VGG16(weights='imagenet', include_top=False, input_shape=(64, 64, 3))
 
 # Son birkaç katmanı eğitilebilir yap
-for layer in base_model.layers[:-15]:  # İlk katmanları dondur, sadece son 4'ü eğit
+for layer in base_model.layers[:-15]:  # tüm katmanlar acık
     layer.trainable = False
 
 # Modelin yeni katmanlarını ekle
@@ -171,7 +168,7 @@ early_stopping = EarlyStopping(
 # Modeli eğit
 history = model.fit(
     X_train, y_train_flat,  # Eğitim verisini doğrudan kullan
-    epochs=100,
+    epochs=130,
     validation_data=(X_test, y_test_flat),
     callbacks=[early_stopping, reduce_lr],  # ReduceLROnPlateau eklendi
     verbose=1
@@ -222,5 +219,5 @@ mape_score = mean_absolute_percentage_error(y_test, preds)
 print(f"Test Seti İçin MAPE: {mape_score:.2f}%")
 
 # Modeli kaydet
-model.save("C:/Users/atade/Desktop/test_sonuçları/VGG16+TEST/model/Yeni7231_64x64+15katman+ınterpolatıon7.keras")
+model.save("C:/Users/atade/Desktop/test_sonuçları/VGG16+TEST/model/Yeni10441_64x64+15katman+ınterpolatıon7.keras")
 print("Model '.keras' formatında kaydedildi.")

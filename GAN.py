@@ -1,25 +1,67 @@
 import os
-import numpy as np
 import pandas as pd
-import tensorflow as tf
-from tensorflow.keras.models import Model, Sequential
-from tensorflow.keras.layers import (Dense, Dropout, GlobalAveragePooling2D, Input, Reshape, Conv2D, 
-                                     LeakyReLU, UpSampling2D, Embedding, Concatenate, Flatten)
+import numpy as np
+from tensorflow.keras import layers, models, Input
 from tensorflow.keras.optimizers import Adam
-from tensorflow.keras import backend as K
 from tensorflow.keras.preprocessing import image
+from tensorflow.keras.models import load_model
 import matplotlib.pyplot as plt
+from sklearn.preprocessing import MinMaxScaler
+import tensorflow.keras.backend as K
+from tensorflow.keras.layers import Dense, Dropout, Flatten, Concatenate
+from tensorflow.keras.layers import Reshape
+from tensorflow.keras.layers import GlobalAveragePooling2D
 
-# GPU Bellek Yönetimi
-gpus = tf.config.experimental.list_physical_devices('GPU')
-if gpus:
-    try:
-        for gpu in gpus:
-            tf.config.experimental.set_memory_growth(gpu, True)
-    except RuntimeError as e:
-        print(e)
 
-# Özel Kayıp Fonksiyonu (weighted_loss)
+
+# CSV dosyalarının bulunduğu klasör
+image_folder = r"C:\Users\atade\Desktop\9683_veri\input_Resim"
+csv_folder = r"C:\Users\atade\Desktop\9683_veri\csv" # Resim dosyalarının yolu
+
+# CSV dosyalarını okuma ve dip değerlerini çıkarma
+def load_dip_values(csv_folder):
+    dip_values = []
+    images = []
+
+    for csv_file in os.listdir(csv_folder):
+        if csv_file.endswith('.csv'):
+            csv_path = os.path.join(csv_folder, csv_file)
+            df = pd.read_csv(csv_path)
+
+            # Dip değeri (en küçük değer) ve grafik verisini almak
+            dip_value = df.iloc[:, 1].min()  # İkinci sütundaki en küçük değer
+            dip_values.append(dip_value)
+            graph_data = df.iloc[:, 0].values  # X değerleri
+            images.append(graph_data)
+
+    return np.array(dip_values), np.array(images)
+
+# CSV verilerini yükle ve normalleştir
+dip_values, graph_data = load_dip_values(csv_folder)
+scaler = MinMaxScaler()
+dip_values_normalized = scaler.fit_transform(dip_values.reshape(-1, 1))
+
+# Görüntüleri yükleme fonksiyonu
+def load_images(image_folder, image_size=(64, 64)):
+    image_files = [f for f in os.listdir(image_folder) if f.endswith('.png')]
+    images = []
+    for img_file in image_files:
+        img_path = os.path.join(image_folder, img_file)
+        img = image.load_img(img_path, target_size=image_size)
+        img_array = image.img_to_array(img) / 255.0
+        height, width, _ = img_array.shape
+        quarter_image = img_array[:height // 2, :width // 2, :]  # Sol üst köşe
+        images.append(quarter_image)
+    return np.array(images)
+
+# Resimleri yükle
+images = load_images(image_folder)
+
+# Model parametreleri
+latent_dim = 100
+condition_dim = 1  # Dip değeri için koşul
+
+# Custom loss function
 def weighted_loss(y_true, y_pred):
     error = K.abs(y_true - y_pred)
     weight = K.exp(-0.07 * K.abs(y_true))
@@ -29,136 +71,148 @@ def weighted_loss(y_true, y_pred):
     loss = K.mean(weight * error) + (0.2 * gradient_penalty)
     return loss
 
-# Generator Modeli (CGAN)
-def build_generator(latent_dim, num_classes):
-    # Koşul girişi
-    condition_input = Input(shape=(1,))
-    condition = Dense(64, activation='relu')(condition_input)
-    condition = Reshape((1, 1, 64))(condition)
-    
-    # Gürültü girişi
+# VGG16 modelini yükleyelim
+vgg_model = load_model(
+    "C:/Users/atade/Desktop/test_sonuçları/VGG16+TEST/model/Yeni7231_64x64+15katman+ınterpolatıon7.keras",
+    custom_objects={'weighted_loss': weighted_loss}
+)
+vgg_model.trainable = False  # VGG16 modelini dondur
+
+# Koşul verisini işleyip, boyutlarını uygun hale getirelim
+condition_input = Input(shape=(1,))  # Dip değeri (1 boyutlu koşul)
+
+# Koşul verisini işleyelim
+condition = Dense(64, activation='relu')(condition_input)  # Koşul verisini uygun şekilde işleyin
+
+# Koşul verisini uygun şekilde yeniden şekillendirelim
+condition = Dense(512)(condition)  # Koşul boyutunu 512'e çıkartalım
+condition = Reshape((512,))(condition)  # Boyutları uygun hale getirelim
+
+# Görüntü verisini işleyelim
+x = vgg_model.output
+x = GlobalAveragePooling2D()(x)  # Görüntü verisini havuzlayalım
+x = Dense(1024, activation='relu')(x)
+x = Dense(512, activation='relu')(x)
+
+# Şimdi görüntü çıktısını ve koşul verisini birleştirelim
+merged = Concatenate()([x, condition])  # GlobalAveragePooling2D çıktısını ve koşulu birleştir
+
+# Ekstra katmanlar ekleyelim
+merged = Flatten()(merged)
+output = Dense(1, activation='sigmoid')(merged)  # Çıktıyı sınıflandırma için
+
+# Final model
+final_model = models.Model([vgg_model.input, condition_input], output)
+
+# Modeli derleyin
+final_model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+
+# Generator modelini oluştur
+# Generator modelini oluştur
+def build_generator(latent_dim, condition_dim):
     noise_input = Input(shape=(latent_dim,))
-    noise = Dense(8 * 8 * 256)(noise_input)
-    noise = Reshape((8, 8, 256))(noise)
-    
-    # Koşul ve gürültüyü birleştir
-    merged = Concatenate()([noise, condition])
-    
-    # CNN Katmanları
-    x = UpSampling2D()(merged)
-    x = Conv2D(128, kernel_size=3, padding='same')(x)
-    x = LeakyReLU(alpha=0.2)(x)
-    x = UpSampling2D()(x)
-    x = Conv2D(64, kernel_size=3, padding='same')(x)
-    x = LeakyReLU(alpha=0.2)(x)
-    x = Conv2D(1, kernel_size=3, padding='same', activation='sigmoid')(x)
-    
-    model = Model([noise_input, condition_input], x)
-    return model
+    condition_input = Input(shape=(condition_dim,))
+    combined_input = layers.Concatenate()([noise_input, condition_input])
 
-# Discriminator Modeli (CGAN)
-def build_discriminator(model_path, num_classes):
-    # Önceden eğitilmiş modeli yükle
-    base_model = tf.keras.models.load_model(model_path, custom_objects={'weighted_loss': weighted_loss})
-    base_model.trainable = False
-    
-    # Görüntü girişi
-    image_input = Input(shape=(32, 32, 1))
-    x = tf.image.resize(image_input, (64, 64))
-    x = tf.tile(x, [1, 1, 1, 3])
-    x = base_model(x)
-    if len(x.shape) == 2:
-        x = Reshape((1, 1, x.shape[1]))(x)
-    x = GlobalAveragePooling2D()(x)
-    
-    # Koşul girişi
-    condition_input = Input(shape=(1,))
-    condition = Dense(64, activation='relu')(condition_input)
-    condition = Reshape((1, 1, 64))(condition)
-    
-    # Görüntü ve koşulu birleştir
-    merged = Concatenate()([x, condition])
-    merged = Flatten()(merged)
-    
-    # Ek katmanlar
-    x = Dense(128, activation='relu')(merged)
-    x = Dropout(0.4)(x)
-    outputs = Dense(1, activation='sigmoid')(x)
-    
-    model = Model([image_input, condition_input], outputs)
-    return model
+    x = layers.Dense(256)(combined_input)
+    x = layers.LeakyReLU(0.2)(x)
+    x = layers.Dense(512)(x)
+    x = layers.LeakyReLU(0.2)(x)
+    x = layers.Dense(1024)(x)
+    x = layers.LeakyReLU(0.2)(x)
 
-# GAN Modeli (CGAN)
+    generated_img = layers.Dense(32 * 32 * 3, activation='tanh')(x)
+    generated_img = layers.Reshape((32, 32, 3))(generated_img)
+
+    generator = models.Model([noise_input, condition_input], generated_img)
+    return generator
+
+
+# Discriminator modelini oluştur
+# Discriminator modelini oluştur
+def build_discriminator(input_shape, condition_dim):
+    img_input = Input(shape=input_shape)
+    condition_input = Input(shape=(condition_dim,))
+    
+    # VGG16 modelini görsel özellikler için burada kullanabiliriz
+    x = vgg_model(img_input)  # Görüntü verisini işlemek için VGG16 kullanılabilir
+    x = Flatten()(x)  # Görüntüyü düzleştiriyoruz
+    
+    combined_input = layers.Concatenate()([x, condition_input])  # Koşul verisi ile birleştiriyoruz
+
+    x = layers.Dense(512)(combined_input)
+    x = layers.LeakyReLU(0.2)(x)
+    x = layers.Dense(256)(x)
+    x = layers.LeakyReLU(0.2)(x)
+    validity = layers.Dense(1, activation='sigmoid')(x)
+
+    discriminator = models.Model([img_input, condition_input], validity)
+    return discriminator
+
+# GAN modelini birleştirme
+# GAN modelini birleştirme
 def build_gan(generator, discriminator):
-    discriminator.trainable = False
+    discriminator.trainable = False  # Discriminator'ı donmuş bırakıyoruz
     noise_input = Input(shape=(latent_dim,))
-    condition_input = Input(shape=(1,))
-    generated_image = generator([noise_input, condition_input])
-    validity = discriminator([generated_image, condition_input])
-    model = Model([noise_input, condition_input], validity)
-    return model
+    condition_input = Input(shape=(condition_dim,))
+    generated_img = generator([noise_input, condition_input])
+    gan_output = discriminator([generated_img, condition_input])
+    gan = models.Model([noise_input, condition_input], gan_output)
+    gan.compile(optimizer=Adam(0.0002, 0.5), loss='binary_crossentropy')
+    return gan
 
-# CSV Dosyalarını Yükleme
-def load_csv_data(csv_path):
-    data = pd.read_csv(csv_path)
-    conditions = data['frequency_range'].values  # Frekans aralığı sütunu
-    return conditions
+# Eğitim döngüsünü oluştur
+# Eğitim döngüsünü oluştur
+def train_gan(generator, discriminator, gan, epochs, batch_size, dip_values_normalized, images):
+    half_batch = batch_size // 2
 
-# Model Yolları ve Parametreler
-model_path = 'C:/Users/atade/Desktop/test_sonuçları/VGG16+TEST/model/Yeni5500_64x64+15katman+ınterpolatıon7.keras'
-csv_path = r"C:\Users\atade\Desktop\5000veri\csv" # CSV dosyası yolu
-latent_dim = 100
-num_classes = 10  # Frekans aralığı sayısı
-epochs = 10000
-batch_size = 16
+    for epoch in range(epochs):
+        real_imgs = images[np.random.randint(0, len(images), half_batch)]
+        conditions = dip_values_normalized[np.random.randint(0, len(dip_values_normalized), half_batch)]
 
-# Verileri Yükle
-conditions = load_csv_data(csv_path)
-print(f"Yüklenen koşul sayısı: {len(conditions)}")
+        # Sahte görüntüler
+        noise = np.random.normal(0, 1, (half_batch, latent_dim))
+        fake_imgs = generator.predict([noise, conditions])
 
-# Model İnşası
-generator = build_generator(latent_dim, num_classes)
-discriminator = build_discriminator(model_path, num_classes)
+        # Discriminator'ı eğitme
+        d_loss_real = discriminator.train_on_batch([real_imgs, conditions], np.ones((half_batch, 1)))
+        d_loss_fake = discriminator.train_on_batch([fake_imgs, conditions], np.zeros((half_batch, 1)))
+        d_loss = 0.5 * np.add(d_loss_real, d_loss_fake)
+
+        # Generator'ı eğitme
+        noise = np.random.normal(0, 1, (batch_size, latent_dim))
+        conditions = dip_values_normalized[np.random.randint(0, len(dip_values_normalized), batch_size)]
+        g_loss = gan.train_on_batch([noise, conditions], np.ones((batch_size, 1)))
+
+        # İlerlemeyi yazdırma
+        print(f"{epoch}/{epochs} [D loss: {d_loss[0]}] [G loss: {g_loss}]")
+
+        # Görselleştirme: Her 1000 epoch'ta bir görüntü oluşturup kaydedelim
+        if epoch % 1000 == 0:
+            plot_generated_images(epoch, generator)
+
+
+## Görüntüleri kaydetmek için fonksiyon
+def plot_generated_images(epoch, generator, latent_dim=100, condition_dim=1):
+    noise = np.random.normal(0, 1, (1, latent_dim))
+    condition = np.array([[0.5]])  # Orta seviyede bir dip değeri verelim
+    generated_img = generator.predict([noise, condition])
+    generated_img = (generated_img + 1) / 2.0  # TanH normalizasyonundan tekrar 0-1 aralığına dönüştür
+
+    # Görüntüyü kaydetme
+    plt.imshow(generated_img[0])
+    plt.title(f"Generated Image at Epoch {epoch}")
+    plt.axis('off')
+    plt.savefig(f"generated_image_{epoch}.png")
+    plt.show()
+
+# Modeli başlat
+generator = build_generator(latent_dim, condition_dim)
+discriminator = build_discriminator((64, 64, 3), condition_dim)
 gan = build_gan(generator, discriminator)
 
-# Optimizasyon ve Derleme
-opt = Adam(learning_rate=0.0002, beta_1=0.5)
-generator.compile(loss='binary_crossentropy', optimizer=opt)
-discriminator.compile(loss='binary_crossentropy', optimizer=opt, metrics=['accuracy'])
-gan.compile(loss='binary_crossentropy', optimizer=opt)
+# Discriminator'ı derle
+discriminator.compile(optimizer=Adam(0.0001, 0.5), loss='binary_crossentropy', metrics=['accuracy'])
 
-# Eğitim Döngüsü
-for epoch in range(epochs):
-    # Gürültü (noise) ve koşul üret
-    noise = np.random.normal(0, 1, (batch_size, latent_dim))
-    condition = np.random.choice(conditions, batch_size).reshape(-1, 1)
-    
-    # Sahte görüntüler üret
-    generated_samples = generator.predict([noise, condition])
-    
-    # Gerçek görüntüleri rastgele seç (bu örnekte koşullu değil)
-    real_samples = np.random.rand(batch_size, 32, 32, 1)  # Örnek olarak rastgele görüntüler
-    
-    # Etiketler
-    real_labels = np.ones((batch_size, 1))
-    fake_labels = np.zeros((batch_size, 1))
-    
-    # Discriminator eğitimi
-    d_loss_real = discriminator.train_on_batch([real_samples, condition], real_labels)
-    d_loss_fake = discriminator.train_on_batch([generated_samples, condition], fake_labels)
-    
-    # Generator eğitimi
-    g_loss = gan.train_on_batch([noise, condition], real_labels)
-    
-    # İlerlemeyi yazdır
-    if epoch % 100 == 0:
-        print(f"Epoch {epoch}/{epochs}, Discriminator Gerçek Kaybı: {d_loss_real[0]}, "
-              f"Discriminator Sahte Kaybı: {d_loss_fake[0]}, Generator Kaybı: {g_loss}")
-        
-        # Görselleştirme
-        if epoch % 500 == 0:
-            generated_image = generated_samples[0, :, :, 0]
-            plt.imshow(generated_image, cmap='gray')
-            plt.title(f"Generated Image - Epoch {epoch}")
-            plt.axis('off')
-            plt.show()
+# GAN'ı eğit
+train_gan(generator, discriminator, gan, epochs=10000, batch_size=8, dip_values_normalized=dip_values_normalized, images=images)

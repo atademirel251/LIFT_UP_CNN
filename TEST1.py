@@ -96,8 +96,8 @@ def load_data_in_order(image_folder, csv_folder, max_length=101, local_min_thres
 
     return np.array(images_original, dtype=np.float32), np.array(images_edited, dtype=np.float32), np.array(outputs, dtype=np.float32)
 # Veri klasörleri
-image_folder = r"C:\Users\atade\Desktop\7231VERI_SIRALANMIS\input_Resim"
-csv_folder = r"C:\Users\atade\Desktop\7231VERI_SIRALANMIS\csv"
+image_folder = r"C:\Users\atade\Desktop\9683_veri\input_Resim"
+csv_folder = r"C:\Users\atade\Desktop\9683_veri\csv"
 
 # **Yeni veri yükleme fonksiyonu çağırılıyor**
 images_original, images_edited, s21_params = load_data_in_order(image_folder, csv_folder, max_length=101)
@@ -123,7 +123,7 @@ print(f"Test Seti İçin MAPE: {mape_score:.2f}%")
 
 
 # **Kullanıcıya 18. indeksin ORİJİNAL görüntüsünü göster**
-example_index = 482
+example_index = 1578
 example_original = images_original[example_index]  # Orijinal görüntü (128x128)
 example_input = X_test[example_index]  # Modelin kullandığı görüntü (64x64)
 example_output = y_test[example_index]

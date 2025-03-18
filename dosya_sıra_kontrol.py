@@ -3,8 +3,8 @@ import pandas as pd
 from natsort import natsorted  # natsort kütüphanesini ekleyin
 
 # Klasörlerinizin path'lerini belirtin
-image_folder = r"C:\Users\atade\Desktop\5447veri\input_Resim"
-csv_folder = r"C:\Users\atade\Desktop\5447veri\csv"
+image_folder = r"C:\Users\atade\Desktop\10440_veri\input_Resim"
+csv_folder = r"C:\Users\atade\Desktop\10440_veri\csv"
 
 # Gizli dosyaları ve istenmeyen dosyaları filtrele
 image_files = natsorted(
@@ -43,7 +43,7 @@ if len(image_files) == len(csv_files):
     df = pd.DataFrame(data)
 
     # Excel dosyası olarak kaydet
-    output_excel_path = "output_matched_files.xlsx"
+    output_excel_path = "output_matched_files9.xlsx"
     df.to_excel(output_excel_path, index=False)
 
     print(f"Eşleştirilmiş dosyalar '{output_excel_path}' dosyasına kaydedildi.")
