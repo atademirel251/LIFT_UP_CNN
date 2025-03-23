@@ -96,8 +96,8 @@ def load_data_in_order(image_folder, csv_folder, max_length=101, local_min_thres
 
     return np.array(images_original, dtype=np.float32), np.array(images_edited, dtype=np.float32), np.array(outputs, dtype=np.float32)
 # Veri klasörleri
-image_folder = r"C:\Users\atade\Desktop\9683_veri\input_Resim"
-csv_folder = r"C:\Users\atade\Desktop\9683_veri\csv"
+image_folder = r"C:\Users\atade\Desktop\10440_veri\input_Resim"
+csv_folder = r"C:\Users\atade\Desktop\10440_veri\csv"
 
 # **Yeni veri yükleme fonksiyonu çağırılıyor**
 images_original, images_edited, s21_params = load_data_in_order(image_folder, csv_folder, max_length=101)
@@ -107,7 +107,7 @@ X_train, X_test, y_train, y_test = train_test_split(images_edited, s21_params, t
 
 
 # Modeli yükle
-model_path = "C:/Users/atade/Desktop/test_sonuçları/VGG16+TEST/model/Yeni7231_64x64+15katman+ınterpolatıon7.keras"
+model_path = r"C:\Users\atade\Desktop\test_sonuçları\VGG16+TEST\model\Yeni10441_64x64+15katman+ınterpolatıon7.keras"
 model = tf.keras.models.load_model(model_path, custom_objects={"weighted_loss": weighted_loss})
 
 # Modeli kullanarak tahmin yap
@@ -123,7 +123,7 @@ print(f"Test Seti İçin MAPE: {mape_score:.2f}%")
 
 
 # **Kullanıcıya 18. indeksin ORİJİNAL görüntüsünü göster**
-example_index = 1578
+example_index = 449
 example_original = images_original[example_index]  # Orijinal görüntü (128x128)
 example_input = X_test[example_index]  # Modelin kullandığı görüntü (64x64)
 example_output = y_test[example_index]

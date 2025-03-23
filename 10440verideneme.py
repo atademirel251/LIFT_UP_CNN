@@ -110,8 +110,8 @@ def load_data_in_order(image_folder, csv_folder, max_length=101, local_min_thres
     return np.array(images, dtype=np.float32), np.array(outputs, dtype=np.float32)  
 
 # Veri klasörleri
-image_folder = r"C:\Users\atade\Desktop\9683_veri\input_Resim"
-csv_folder = r"C:\Users\atade\Desktop\9683_veri\csv"
+image_folder = r"C:\Users\atade\Desktop\10440_veri\input_Resim"
+csv_folder = r"C:\Users\atade\Desktop\10440_veri\csv"
 
 # Veriyi yükle
 images, s21_params = load_data_in_order(image_folder, csv_folder, max_length=101)

@@ -4,30 +4,40 @@ import tensorflow as tf
 from tensorflow.keras import layers
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.optimizers import Adam
-from PIL import Image  # PNG kaydetmek için
 import matplotlib.pyplot as plt
 
-# Giriş klasörü ve çıktı klasörü
-input_folder = r"C:\Users\atade\Desktop\10440_veri\input_Resim"  # 16x16 PNG resimlerinin bulunduğu klasör
+from PIL import Image  # PNG kaydetmek için
+import csv
+tf.keras.mixed_precision.set_global_policy('float32')
+
+# Giriş verileri (CSV dosyası)
+input_csv_path = r"C:\Users\atade\Desktop\ahmet.csv"  # CSV dosyasını kullanıyoruz
+
+# Çıktı klasörü
 output_img_folder = r"C:\Users\atade\Desktop\gan_img_output"
 os.makedirs(output_img_folder, exist_ok=True)
 
-# Resimleri yükleme fonksiyonu
-def load_images_from_folder(folder_path, img_size=(16, 16)):
-    images = []
-    file_list = sorted([f for f in os.listdir(folder_path) if f.endswith('.png')])
-    for file_name in file_list:
-        img_path = os.path.join(folder_path, file_name)
-        img = Image.open(img_path).convert("L")  # Gri tonlama
-        img = img.resize(img_size)  # Resmi yeniden boyutlandır
-        img_array = np.array(img)
-        images.append(img_array)
-    return np.array(images)
+# CSV kaydetme için klasör
+csv_file_path = r"C:\Users\atade\Desktop\input_images.csv"
 
-# Giriş resimlerini yükle
-images = load_images_from_folder(input_folder)
-images = images.reshape((-1, 16, 16, 1))  # 16x16'lık boyutta olacak şekilde şekil değiştir
-images = images.astype(np.uint8)
+# CSV dosyasından verileri yükleme
+def load_csv_data(file_path):
+    data = np.loadtxt(file_path, delimiter=',')  # CSV dosyasını yükle
+    data = data.reshape((-1, 16, 16, 1))  # 16x16 boyutunda olacak şekilde şekil değiştir
+    return data.astype(np.uint8)
+
+# Görüntüleri yükle
+images = load_csv_data(input_csv_path)
+
+# Giriş resimlerini CSV dosyasına kaydetme
+def save_images_to_csv(images, csv_file_path):
+    with open(csv_file_path, mode='w', newline='') as file:
+        writer = csv.writer(file)
+        for image in images:
+            writer.writerow(image.flatten())  # 16x16'lık her resmi satır olarak yaz
+
+# Giriş resimlerini CSV'ye kaydet
+save_images_to_csv(images, csv_file_path)
 
 # GAN Modeli
 def build_generator(latent_dim):
@@ -76,7 +86,7 @@ gan.compile(loss='binary_crossentropy', optimizer=Adam(0.0001, 0.5))
 # Üretilen görüntüleri kaydetme fonksiyonu (PNG formatında)
 def save_generated_images(generator, epoch, latent_dim, output_folder, examples=10):
     noise = np.random.normal(0, 1, (examples, latent_dim))
-    generated_images = generator.predict(noise)
+    generated_images = generator.predict(noise)  
     generated_images = (generated_images * 255).astype(np.uint8)  # 0-255 formatına getir
 
     for i in range(examples):
