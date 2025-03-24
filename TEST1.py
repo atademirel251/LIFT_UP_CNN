@@ -123,7 +123,7 @@ print(f"Test Seti İçin MAPE: {mape_score:.2f}%")
 
 
 # **Kullanıcıya 18. indeksin ORİJİNAL görüntüsünü göster**
-example_index = 449
+example_index = 676
 example_original = images_original[example_index]  # Orijinal görüntü (128x128)
 example_input = X_test[example_index]  # Modelin kullandığı görüntü (64x64)
 example_output = y_test[example_index]
