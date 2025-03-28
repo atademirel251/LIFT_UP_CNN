@@ -1,7 +1,8 @@
 
 from keras.models import load_model
 import numpy as np
-
+import cv2
+from scipy.ndimage import binary_fill_holes
 import os
 import numpy as np
 import tensorflow as tf
@@ -34,7 +35,7 @@ def load_images_and_frequencies(image_folder, csv_folder, img_size=(64, 64)):
             print(f"Hatalı CSV formatı: {csv_file}. Atlanıyor.")
     
     # Resimleri aynı sırayla yükle
-    image_files = natsorted([f for f in os.listdir(image_folder) if f.endswith(".png")])
+    image_files = natsorted([f for f in os.listdir(image_folder) if f.endswith((".png", ".jpg"))])
     
     for img_file in image_files:
         img_path = os.path.join(image_folder, img_file)
@@ -85,11 +86,27 @@ mean_frequency = np.mean(frequencies)
 std_frequency = np.std(frequencies)
 
 # Örnek frekans değeri ile görüntü üret
-frequency = 18 
+frequency = 9
 latent_dim =350# Örneğin, 10 GHz
+
+
+
+# Örnek frekans değeri ile görüntü üret
 generated_image = generate_image_for_frequency(generator, frequency, latent_dim, mean_frequency, std_frequency)
 
-# Üretilen görüntüyü göster
+# Eksik pikselleri doldur
+
+
+# Doldurulmuş resmi göster
 plt.imshow(generated_image, interpolation='nearest')
 plt.axis('off')
 plt.show()
+print("Inpainted image shape:", generated_image.shape)
+
+# Doldurulmuş görüntüyü kaydet
+output_path_inpainted = r"C:\Users\atade\Desktop\image_rgb1.png"
+plt.imshow(generated_image, interpolation='nearest')
+plt.axis('off')
+plt.savefig(output_path_inpainted, bbox_inches='tight', pad_inches=0)
+print(f"Inpainted image saved to: {output_path_inpainted}")
+
