@@ -3,11 +3,11 @@ import pandas as pd
 from natsort import natsorted  # Doğal sıralama için
 
 # CSV dosyalarının bulunduğu klasörün path'ini belirtin
-csv_folder = r"C:\Users\atade\Desktop\dÜZENLLEME\CSV"
+csv_folder = r"C:\Users\atade\Desktop\e\Model_Eğitim_binary_92\cropped_images"
 
 # Gizli dosyaları ve istenmeyen dosyaları filtrele
 csv_files = natsorted(
-    [f for f in os.listdir(csv_folder) if f.endswith('.csv')],
+    [f for f in os.listdir(csv_folder) if f.endswith('.png')],
     key=lambda x: x.lower()  # Büyük/küçük harf duyarlılığını kaldır
 )
 
@@ -16,7 +16,7 @@ data = []  # Eski ve yeni adları saklamak için
 
 for index, old_name in enumerate(csv_files, start=1):
     # Yeni dosya adını oluştur (ATA1.csv, ATA2.csv, ...)
-    new_name = f"ATA{index}.csv"
+    new_name = f"CA{index}.png"
 
     # Dosyayı yeniden adlandır
     old_path = os.path.join(csv_folder, old_name)
@@ -30,7 +30,5 @@ for index, old_name in enumerate(csv_files, start=1):
 df = pd.DataFrame(data)
 
 # Excel dosyası olarak kaydet
-output_excel_path = "csv_dosya_adlari_degisti.xlsx"
-df.to_excel(output_excel_path, index=False)
 
-print(f"{len(csv_files)} CSV dosyası yeniden adlandırıldı ve bilgiler '{output_excel_path}' dosyasına kaydedildi.")
+
