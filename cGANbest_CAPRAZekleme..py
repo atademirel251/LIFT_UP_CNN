@@ -72,8 +72,8 @@ def load_images_and_frequencies(image_folder, csv_folder, img_size=(64, 64)):
     return np.array(images), np.array(frequencies)
 
 # Load images and frequencies
-image_folder = r"C:\Users\atade\Desktop\10440_veri\input_Resim"
-csv_folder = r"C:\Users\atade\Desktop\10440_veri\csv"
+image_folder = r"C:\Users\atade\Desktop\Sinan_Veriler\resized128\Resized"
+csv_folder = r"C:\Users\atade\Desktop\Sinan_Veriler\Tüm_csv"
 images, frequencies = load_images_and_frequencies(image_folder, csv_folder)
 
 # Normalize frequencies to [-1, 1]
@@ -146,24 +146,24 @@ def build_gan(generator, discriminator, latent_dim, lambda_symmetry=10):
     # Modeli oluştur ve derle
     gan = Model([noise, freq], valid)
     gan.add_loss(total_loss)
-    gan.compile(optimizer=Adam(0.00005, 0.5))  # 🔹 Learning Rate düşürüldü
+    gan.compile(optimizer=Adam(0.0001, 0.5))  # 🔹 Learning Rate düşürüldü
 
     return gan
 
 # Model parameters
 img_shape = images.shape[1:]  # Görüntü boyutları
-latent_dim = 150  # Latent dim boyutu
+latent_dim = 100  # Latent dim boyutu
 
 # Build models
 discriminator = build_discriminator(img_shape)
-discriminator.compile(loss='binary_crossentropy', optimizer=Adam(0.00005, 0.5), metrics=['accuracy'])
+discriminator.compile(loss='binary_crossentropy', optimizer=Adam(0.0001, 0.5), metrics=['accuracy'])
 
 generator = build_generator(latent_dim)
 gan = build_gan(generator, discriminator, latent_dim)
-gan.compile(loss='binary_crossentropy', optimizer=Adam(0.00005, 0.5))
+gan.compile(loss='binary_crossentropy', optimizer=Adam(0.0001, 0.5))
 
 # Training function
-def train_gan(gan, generator, discriminator, images, frequencies, latent_dim, epochs=30000, batch_size=8, save_interval=500):
+def train_gan(gan, generator, discriminator, images, frequencies, latent_dim, epochs=20000, batch_size=8, save_interval=500):
     half_batch = batch_size // 2
     for epoch in range(epochs):
         # Select real images and corresponding frequencies
@@ -194,7 +194,7 @@ def train_gan(gan, generator, discriminator, images, frequencies, latent_dim, ep
         if epoch % save_interval == 0:
             save_images(generator, epoch, latent_dim, frequencies)
 
-def save_images(generator, epoch, latent_dim, frequencies, examples=10):
+def save_images(generator, epoch, latent_dim, frequencies, examples=4):
     noise = np.random.normal(0, 1, (examples, latent_dim))
     sampled_frequencies = np.random.choice(frequencies, examples)
     generated_images = generator.predict([noise, sampled_frequencies])

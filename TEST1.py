@@ -56,7 +56,8 @@ def load_data_in_order(image_folder, csv_folder, max_length=101, local_min_thres
 
         # **Çeyrek bölgeyi al (sol üst köşe)**
         w, h = image.size
-        quarter_image = image.crop((0, 0, w // 2, h // 2))
+        #quarter_image = image.crop((0, 0, w // 2, h // 2))
+        quarter_image = image.crop((0, h // 2, w // 2, h))
 
         # **Çeyrek bölgeyi 64x64 boyutuna küçült**
         resized_image = quarter_image.resize((64, 64))
@@ -96,8 +97,9 @@ def load_data_in_order(image_folder, csv_folder, max_length=101, local_min_thres
 
     return np.array(images_original, dtype=np.float32), np.array(images_edited, dtype=np.float32), np.array(outputs, dtype=np.float32)
 # Veri klasörleri
-image_folder = r"C:\Users\atade\Desktop\Sinan_Veriler\resim2\Resized"
-csv_folder = r"C:\Users\atade\Desktop\Sinan_Veriler\Tüm_csv"
+image_folder = r"C:\Users\atade\Desktop\resim128_opencv_rgb"
+csv_folder = r"C:\Users\atade\Desktop\12386_veri\Tüm_csv"
+
 
 # **Yeni veri yükleme fonksiyonu çağırılıyor**
 images_original, images_edited, s21_params = load_data_in_order(image_folder, csv_folder, max_length=101)
@@ -107,7 +109,7 @@ X_train, X_test, y_train, y_test = train_test_split(images_edited, s21_params, t
 
 
 # Modeli yükle
-model_path = r"C:/Users/atade/Desktop/test_sonuçları/VGG16+TEST/model/5000Düzenlenmis_64x64+15katman+ınterpolatıon7.keras"
+model_path = r"C:/Users/atade/Desktop/test_sonuçları/VGG16+TEST/model/12386Düzenlenmis1_64x64+15katman+ınterpolatıon7.keras"
 model = tf.keras.models.load_model(model_path, custom_objects={"weighted_loss": weighted_loss})
 
 # Modeli kullanarak tahmin yap
@@ -123,7 +125,7 @@ print(f"Test Seti İçin MAPE: {mape_score:.2f}%")
 
 
 # **Kullanıcıya 18. indeksin ORİJİNAL görüntüsünü göster**
-example_index = 285
+example_index = 290
 example_original = images_original[example_index]  # Orijinal görüntü (128x128)
 example_input = X_test[example_index]  # Modelin kullandığı görüntü (64x64)
 example_output = y_test[example_index]

@@ -15,8 +15,8 @@ from scipy.interpolate import interp1d
 from natsort import natsorted  # natsort kütüphanesini ekleyin
 
 # GPU Bellek Yönetimi
-physical_devices = tf.config.list_physical_devices('GPU')
-tf.config.experimental.set_memory_growth(physical_devices[0], True)
+#physical_devices = tf.config.list_physical_devices('GPU')
+#tf.config.experimental.set_memory_growth(physical_devices[0], True)
 
 # Ağırlıklı Kayıp Fonksiyonu (Dip Noktalara Önem Ver)
 def weighted_loss(y_true, y_pred):
@@ -45,10 +45,13 @@ def load_data_in_order(image_folder, csv_folder, max_length=101, local_min_thres
     [f for f in os.listdir(csv_folder) if f.endswith('.csv')],
     key=lambda x: x.lower()  # Büyük/küçük harf duyarlılığını kaldır
 )
+    a = len(image_files)
+    b = len(csv_files)
+    print(f"a: {a}, b: {b}")
 
-    
     if len(image_files) != len(csv_files):
         raise ValueError("Görüntü ve CSV dosyalarının sayısı eşleşmiyor!")
+
 
     # image_files ve csv_files listelerini Excel'e kaydet
 
@@ -63,9 +66,9 @@ def load_data_in_order(image_folder, csv_folder, max_length=101, local_min_thres
 
        
 
+        # sol alt köse alındı
+        quarter_image = image.crop((0, h // 2, w // 2, h))
 
-        # Çeyrek bölgeyi al (sol üst köşe)
-        quarter_image = image.crop((0, 0, w // 2, h // 2))
 
         # Çeyrek bölgeyi 64x64 boyutuna getir
         resized_image = quarter_image.resize((64, 64))
@@ -113,8 +116,8 @@ def load_data_in_order(image_folder, csv_folder, max_length=101, local_min_thres
     return np.array(images, dtype=np.float32), np.array(outputs, dtype=np.float32)  
 
 # Veri klasörleri
-image_folder = r"C:\Users\atade\Desktop\Sinan_Veriler\resim2\Resized"
-csv_folder = r"C:\Users\atade\Desktop\Sinan_Veriler\Tüm_csv"
+image_folder = r"C:\Users\atade\Desktop\resim128_opencv_rgb"
+csv_folder = r"C:\Users\atade\Desktop\12386_veri\Tüm_csv"
 
 # Veriyi yükle
 images, s21_params = load_data_in_order(image_folder, csv_folder, max_length=101)
@@ -171,7 +174,7 @@ early_stopping = EarlyStopping(
 # Modeli eğit
 history = model.fit(
     X_train, y_train_flat,  # Eğitim verisini doğrudan kullan
-    epochs=80,
+    epochs=110,
     validation_data=(X_test, y_test_flat),
     callbacks=[early_stopping, reduce_lr],  # ReduceLROnPlateau eklendi
     verbose=1
@@ -222,5 +225,5 @@ mape_score = mean_absolute_percentage_error(y_test, preds)
 print(f"Test Seti İçin MAPE: {mape_score:.2f}%")
 
 # Modeli kaydet
-model.save("C:/Users/atade/Desktop/test_sonuçları/VGG16+TEST/model/5000Düzenlenmis_64x64+15katman+ınterpolatıon7.keras")
+model.save("C:/Users/atade/Desktop/test_sonuçları/VGG16+TEST/model/12386Düzenlenmis1_64x64+15katman+ınterpolatıon7.keras")
 print("Model '.keras' formatında kaydedildi.")

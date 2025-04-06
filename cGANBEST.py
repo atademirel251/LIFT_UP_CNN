@@ -47,8 +47,8 @@ def load_images_and_frequencies(image_folder, csv_folder, img_size=(64, 64)):
     return np.array(images), np.array(frequencies)
 
 # Load images and frequencies
-image_folder = r"C:\Users\atade\Desktop\10440_veri\input_Resim"
-csv_folder = r"C:\Users\atade\Desktop\10440_veri\csv"
+image_folder = r"C:\Users\atade\Desktop\Sinan_Veriler\resized128\Resized"
+csv_folder = r"C:\Users\atade\Desktop\Sinan_Veriler\Tüm_csv"
 images, frequencies = load_images_and_frequencies(image_folder, csv_folder)
 
 # Normalize frequencies to [-1, 1]
@@ -100,7 +100,7 @@ def build_gan(generator, discriminator):
 
 # Model parameters
 img_shape = images.shape[1:]
-latent_dim = 350
+latent_dim = 150
 
 # Build models
 discriminator = build_discriminator(img_shape)
@@ -165,8 +165,8 @@ def save_images(generator, epoch, latent_dim, frequencies, examples=10):
         plt.close()
 
 # Train the GAN
-train_gan(gan, generator, discriminator, images, frequencies, latent_dim, epochs=30000, batch_size=8, save_interval=500)
-generator.save("generator_model1.h5")
+train_gan(gan, generator, discriminator, images, frequencies, latent_dim, epochs=5000, batch_size=8, save_interval=500)
+generator.save("generator_modelyeniveri.h5")
 # Generate an image for a specific frequency in the 2-20 GHz range
 def generate_image_for_frequency(generator, frequency, latent_dim):
     noise = np.random.normal(0, 1, (1, latent_dim))
