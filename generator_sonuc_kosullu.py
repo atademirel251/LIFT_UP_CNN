@@ -42,7 +42,8 @@ def load_images_and_frequencies(image_folder, csv_folder, img_size=(64, 64)):
         img = load_img(img_path)
         img = img_to_array(img)
         height, width, _ = img.shape
-        img = img[height//2:, width//2:, :]  # Crop the image
+        #img = img[height//2:, width//2:, :]
+        img = img[:height//2, :width//2, :]   # Crop the image
         img = tf.image.resize(img, img_size)  # Resize the image
         img = (img - 127.5) / 127.5  # Normalize to [-1, 1]
         images.append(img)
@@ -52,14 +53,14 @@ def load_images_and_frequencies(image_folder, csv_folder, img_size=(64, 64)):
     return np.array(images), np.array(frequencies)
 
 # Load images and frequencies
-image_folder = r"C:\Users\atade\Desktop\10440_veri\input_Resim"
-csv_folder = r"C:\Users\atade\Desktop\10440_veri\csv"
+image_folder = r"C:\Users\atade\Desktop\13579_veri\resim128_opencv_rgb"
+csv_folder = r"C:\Users\atade\Desktop\13579_veri\Tüm_csv"
 images, frequencies = load_images_and_frequencies(image_folder, csv_folder)
 
 # Normalize frequencies to [-1, 1]
 frequencies = (frequencies - np.mean(frequencies)) / np.std(frequencies) 
 # Kaydedilen generator modelini yükle
-generator = load_model("generator_model1.h5")
+generator = load_model(r"C:\Users\atade\Desktop\LIFT_UP_CNN\generator_model4.h5")
 
 
 
@@ -86,8 +87,8 @@ mean_frequency = np.mean(frequencies)
 std_frequency = np.std(frequencies)
 
 # Örnek frekans değeri ile görüntü üret
-frequency = 9
-latent_dim =350# Örneğin, 10 GHz
+frequency = 15
+latent_dim =32# Örneğin, 10 GHz
 
 
 

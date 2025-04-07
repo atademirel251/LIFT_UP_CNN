@@ -66,8 +66,8 @@ def load_data_in_order(image_folder, csv_folder, max_length=101, local_min_thres
 
        
 
-        # sol alt köse alındı
-        quarter_image = image.crop((0, h // 2, w // 2, h))
+        # sol ust köse alındı
+        quarter_image = image.crop((0, 0, w // 2, h // 2))
 
 
         # Çeyrek bölgeyi 64x64 boyutuna getir
@@ -116,8 +116,8 @@ def load_data_in_order(image_folder, csv_folder, max_length=101, local_min_thres
     return np.array(images, dtype=np.float32), np.array(outputs, dtype=np.float32)  
 
 # Veri klasörleri
-image_folder = r"C:\Users\atade\Desktop\resim128_opencv_rgb"
-csv_folder = r"C:\Users\atade\Desktop\12386_veri\Tüm_csv"
+image_folder = r"C:\Users\atade\Desktop\13579_veri\resim128_opencv_rgb"
+csv_folder = r"C:\Users\atade\Desktop\13579_veri\Tüm_csv"
 
 # Veriyi yükle
 images, s21_params = load_data_in_order(image_folder, csv_folder, max_length=101)
@@ -174,7 +174,7 @@ early_stopping = EarlyStopping(
 # Modeli eğit
 history = model.fit(
     X_train, y_train_flat,  # Eğitim verisini doğrudan kullan
-    epochs=110,
+    epochs=130,
     validation_data=(X_test, y_test_flat),
     callbacks=[early_stopping, reduce_lr],  # ReduceLROnPlateau eklendi
     verbose=1
@@ -225,5 +225,5 @@ mape_score = mean_absolute_percentage_error(y_test, preds)
 print(f"Test Seti İçin MAPE: {mape_score:.2f}%")
 
 # Modeli kaydet
-model.save("C:/Users/atade/Desktop/test_sonuçları/VGG16+TEST/model/12386Düzenlenmis1_64x64+15katman+ınterpolatıon7.keras")
+model.save("C:/Users/atade/Desktop/test_sonuçları/VGG16+TEST/model/13579Düzenlenmis1_64x64+15katman+ınterpolatıon7.keras")
 print("Model '.keras' formatında kaydedildi.")

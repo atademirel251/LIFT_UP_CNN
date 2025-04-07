@@ -44,11 +44,11 @@ def predict_s21_from_image(model, image_path):
     return frekans, s21, (w, h), img
 
 # Modeli Yükle
-model_path = r"C:\Users\atade\Desktop\test_sonuçları\VGG16+TEST\model\Yeni10441_64x64+15katman+ınterpolatıon7.keras"
+model_path = r"C:/Users/atade/Desktop/test_sonuçları/VGG16+TEST/model/13579Düzenlenmis1_64x64+15katman+ınterpolatıon7.keras"
 model = load_model(model_path, custom_objects={'weighted_loss': weighted_loss})
 
 # Kullanım Örneği
-image_path1 = r"C:\Users\atade\Desktop\image_rgb1.png"
+image_path1 = r"C:\Users\atade\Desktop\LIFT_UP_CNN\quarter_patterns\quarter_pattern_freq_20.png"
 freq1, s21_1, img_size1, img1 = predict_s21_from_image(model, image_path1)
 
 # Flip işlemleri

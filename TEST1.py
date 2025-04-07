@@ -56,8 +56,8 @@ def load_data_in_order(image_folder, csv_folder, max_length=101, local_min_thres
 
         # **Çeyrek bölgeyi al (sol üst köşe)**
         w, h = image.size
-        #quarter_image = image.crop((0, 0, w // 2, h // 2))
-        quarter_image = image.crop((0, h // 2, w // 2, h))
+        quarter_image = image.crop((0, 0, w // 2, h // 2))
+        
 
         # **Çeyrek bölgeyi 64x64 boyutuna küçült**
         resized_image = quarter_image.resize((64, 64))

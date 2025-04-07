@@ -93,43 +93,60 @@ def build_generator(latent_dim):
     
     x = layers.Dense(128 * 16 * 16)(merged)
     x = layers.LeakyReLU(alpha=0.2)(x)
-    x = layers.BatchNormalization(momentum=0.8)(x)  # 🔹 Batch Norm eklendi
+    x = layers.BatchNormalization(momentum=0.8)(x)
     x = layers.Reshape((16, 16, 128))(x)
     
+    # Katman 1: 16x16 -> 32x32
     x = layers.Conv2DTranspose(128, (4, 4), strides=(2, 2), padding='same')(x)
     x = layers.LeakyReLU(alpha=0.2)(x)
-    x = layers.BatchNormalization(momentum=0.8)(x)  # 🔹 Batch Norm eklendi
+    x = layers.BatchNormalization(momentum=0.8)(x)
     
+    # Katman 2: 32x32 -> 64x64
     x = layers.Conv2DTranspose(128, (4, 4), strides=(2, 2), padding='same')(x)
     x = layers.LeakyReLU(alpha=0.2)(x)
-    x = layers.BatchNormalization(momentum=0.8)(x)  # 🔹 Batch Norm eklendi
+    x = layers.BatchNormalization(momentum=0.8)(x)
     
+    # Ekstra Katman (64x64 -> 64x64) - Depth-wise convolution
+    x = layers.Conv2D(128, (3, 3), padding='same')(x)
+    x = layers.LeakyReLU(alpha=0.2)(x)
+    x = layers.BatchNormalization(momentum=0.8)(x)
+    
+    # Çıkış Katmanı (3 kanal RGB)
     x = layers.Conv2D(3, (3, 3), activation='tanh', padding='same')(x)
     
     return Model([noise, freq], x)
+
 
 # Discriminator Model
 def build_discriminator(img_shape):
     img = layers.Input(shape=img_shape)
     freq = layers.Input(shape=(1,))
     
+    # Process the frequency map (expand it first)
     freq_expanded = layers.Dense(img_shape[0] * img_shape[1])(freq)
     freq_expanded = layers.Reshape((img_shape[0], img_shape[1], 1))(freq_expanded)
     
+    # Upsample the frequency map to match the image dimensions (256x256)
+    freq_expanded = layers.UpSampling2D(size=(img_shape[0] // 64, img_shape[1] // 64))(freq_expanded)
+    
+    # Concatenate the image and upsampled frequency map
     merged = layers.Concatenate()([img, freq_expanded])
     
-    x = layers.Conv2D(64, (3, 3), strides=(2, 2), padding='same')(merged)
-    x = layers.LeakyReLU(alpha=0.2)(x)
-    x = layers.Dropout(0.3)(x)  # 🔹 Dropout artırıldı (0.3)
+    # Add convolutional layers
+    x = layers.Conv2D(32, (3, 3), strides=(2, 2), padding='same')(merged)
+    x = layers.LeakyReLU(0.2)(x)
+    x = layers.Dropout(0.5)(x)
     
-    x = layers.Conv2D(128, (3, 3), strides=(2, 2), padding='same')(x)
-    x = layers.LeakyReLU(alpha=0.2)(x)
-    x = layers.Dropout(0.3)(x)  # 🔹 Dropout artırıldı (0.3)
+    x = layers.Conv2D(64, (3, 3), strides=(2, 2), padding='same')(x)
+    x = layers.LeakyReLU(0.2)(x)
+    x = layers.Dropout(0.5)(x)
     
     x = layers.Flatten()(x)
     x = layers.Dense(1, activation='sigmoid')(x)
     
     return Model([img, freq], x)
+
+
 
 # cGAN Modeli
 def build_gan(generator, discriminator, latent_dim, lambda_symmetry=10):
@@ -153,7 +170,7 @@ def build_gan(generator, discriminator, latent_dim, lambda_symmetry=10):
     # Modeli oluştur ve derle
     gan = Model([noise, freq], valid)
     gan.add_loss(total_loss)
-    gan.compile(optimizer=Adam(0.0001, 0.5))  # 🔹 Learning Rate düşürüldü
+    gan.compile(optimizer=Adam(0.0005, 0.5))  # 🔹 Learning Rate düşürüldü
 
     return gan
 
@@ -167,10 +184,10 @@ discriminator.compile(loss='binary_crossentropy', optimizer=Adam(0.0001, 0.5), m
 
 generator = build_generator(latent_dim)
 gan = build_gan(generator, discriminator, latent_dim)
-gan.compile(loss='binary_crossentropy', optimizer=Adam(0.0001, 0.5))
+gan.compile(loss='binary_crossentropy', optimizer=Adam(0.0008, 0.5))
 
 # Training function
-def train_gan(gan, generator, discriminator, images, frequencies, latent_dim, epochs=5000, batch_size=8, save_interval=500):
+def train_gan(gan, generator, discriminator, images, frequencies, latent_dim, epochs=30000, batch_size=16, save_interval=500):
     half_batch = batch_size // 2
     for epoch in range(epochs):
         # Select real images and corresponding frequencies
@@ -218,9 +235,9 @@ def save_images(generator, epoch, latent_dim, frequencies, examples=4):
         plt.imshow(pattern_image, interpolation='nearest')
         plt.axis('off')
         plt.tight_layout()
-        plt.savefig(f"atagan_patternSON_epoch_{epoch}_sample_{i}.png")
+        plt.savefig(f"TALHAgan_patternSON_epoch_{epoch}_sample_{i}.png")
         plt.close()
 
 # Train GAN model
 train_gan(gan, generator, discriminator, images, frequencies, latent_dim)
-generator.save("generator_model3.h5")
+generator.save("generator_model4.h5")
