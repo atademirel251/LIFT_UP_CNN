@@ -58,7 +58,7 @@ try:
 except:
     from keras.utils.generic_utils import get_custom_objects
     get_custom_objects().update({"diagonal_symmetry_loss": diagonal_symmetry_loss})
-    generator = load_model("generator_model4.h5", compile=False)
+    generator = load_model("generator_model4_20_nisan.h5", compile=False)
 
 # Orijinal frekans istatistikleri
 def get_frequency_stats():
