@@ -1,4 +1,4 @@
-""" import os
+import os
 import cv2
 
 def resize_and_save_images(input_folder, output_folder, size=(128, 128)):
@@ -20,11 +20,11 @@ def resize_and_save_images(input_folder, output_folder, size=(128, 128)):
             print(f"{filename} yeniden boyutlandırıldı ve kaydedildi: {output_path}")
 
 # Klasör yollarını buraya yaz
-input_folder = r"C:\Users\atade\Desktop\EREN_Veriler\e8\pikselize"
-output_folder = r"C:\Users\atade\Desktop\EREN_Veriler\e8\128x128"
+input_folder = r"C:\Users\atade\Desktop\EREN_Veriler\e9\324x324"
+output_folder = r"C:\Users\atade\Desktop\EREN_Veriler\e9\128x128"
 
 resize_and_save_images(input_folder, output_folder)
- """
+
 
 
 

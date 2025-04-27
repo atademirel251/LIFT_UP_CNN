@@ -35,16 +35,17 @@ def weighted_loss(y_true, y_pred):
     return loss 
 
 # Veri yükleme fonksiyonu
+# Veri yükleme fonksiyonu
 def load_data_in_order(image_folder, csv_folder, max_length=101, local_min_threshold=0.2):
     # Dosyaları doğal sıralama ile sırala
     image_files = natsorted(
-    [f for f in os.listdir(image_folder) if f.endswith(('.jpg', '.jpeg', '.png'))],
-    key=lambda x: x.lower()  # Büyük/küçük harf duyarlılığını kaldır
-)
+        [f for f in os.listdir(image_folder) if f.endswith(('.jpg', '.jpeg', '.png'))],
+        key=lambda x: x.lower()  # Büyük/küçük harf duyarlılığını kaldır
+    )
     csv_files = natsorted(
-    [f for f in os.listdir(csv_folder) if f.endswith('.csv')],
-    key=lambda x: x.lower()  # Büyük/küçük harf duyarlılığını kaldır
-)
+        [f for f in os.listdir(csv_folder) if f.endswith('.csv')],
+        key=lambda x: x.lower()  # Büyük/küçük harf duyarlılığını kaldır
+    )
     a = len(image_files)
     b = len(csv_files)
     print(f"a: {a}, b: {b}")
@@ -52,24 +53,16 @@ def load_data_in_order(image_folder, csv_folder, max_length=101, local_min_thres
     if len(image_files) != len(csv_files):
         raise ValueError("Görüntü ve CSV dosyalarının sayısı eşleşmiyor!")
 
-
-    # image_files ve csv_files listelerini Excel'e kaydet
-
-
     images, outputs = [], []
     
-
     for img_file, csv_file in zip(image_files, csv_files):
         image_path = os.path.join(image_folder, img_file)
-        image = Image.open(image_path)  # Görüntüyü aç
+        image = Image.open(image_path).convert("RGB")  # RGB formatında aç
+
         w, h = image.size  # Orijinal genişlik ve yükseklik
 
-       
-
-        # sol ust köse alındı
+        # sol üst köşe alındı
         quarter_image = image.crop((w // 2, h // 2, w, h))
-
-
 
         # Çeyrek bölgeyi 64x64 boyutuna getir
         resized_image = quarter_image.resize((64, 64))
@@ -114,7 +107,8 @@ def load_data_in_order(image_folder, csv_folder, max_length=101, local_min_thres
 
         outputs.append(combined)
 
-    return np.array(images, dtype=np.float32), np.array(outputs, dtype=np.float32)  
+    return np.array(images, dtype=np.float32), np.array(outputs, dtype=np.float32)
+
 
 # Veri klasörleri
 image_folder = r"C:\Users\atade\Desktop\14348_VERi\resim128_NET"
