@@ -171,34 +171,3 @@ if __name__ == "__main__":
         generator.generate_and_save(freq, "generated_patterns")
     
     print("Tüm desenler başarıyla oluşturuldu ve kaydedildi.")
-
-
-
-
-import matplotlib.pyplot as plt
-import pandas as pd
-
-# Frekansları al
-image_folder = r"C:\Users\atade\Desktop\13579_veri\resim128_opencv_rgb"
-csv_folder = r"C:\Users\atade\Desktop\13579_veri\Tüm_csv"
-
-_, frequencies = load_images_and_frequencies(image_folder, csv_folder)
-
-# Pandas ile frekans dağılımını al
-freq_series = pd.Series(frequencies)
-freq_counts = freq_series.value_counts().sort_index()
-
-# Tablo olarak yazdır
-print("Frekans Dağılımı:")
-print(freq_counts)
-
-# Matplotlib ile çubuk grafik çiz
-plt.figure(figsize=(12, 6))
-plt.bar(freq_counts.index, freq_counts.values, color='skyblue')
-plt.title("Frekanslara Göre Örnek Sayısı Dağılımı")
-plt.xlabel("Frekans Değeri")
-plt.ylabel("Örnek Sayısı")
-plt.xticks(rotation=45)
-plt.grid(axis='y', linestyle='--', alpha=0.7)
-plt.tight_layout()
-plt.show()
