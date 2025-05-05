@@ -61,7 +61,7 @@ def load_data_in_order(image_folder, csv_folder, max_length=101, local_min_thres
 
         w, h = image.size  # Orijinal genişlik ve yükseklik
 
-        # sol üst köşe alındı
+        # sağ alt köşe alındı
         quarter_image = image.crop((w // 2, h // 2, w, h))
 
         # Çeyrek bölgeyi 64x64 boyutuna getir

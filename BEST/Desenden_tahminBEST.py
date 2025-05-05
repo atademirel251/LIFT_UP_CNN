@@ -66,7 +66,7 @@ def load_data_in_order(image_folder, csv_folder, max_length=101, local_min_thres
 
        
 
-        # sol ust köse alındı
+        # sag alt köse alındı
         quarter_image = image.crop((w // 2, h // 2, w, h))
 
 

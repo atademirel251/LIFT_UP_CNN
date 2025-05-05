@@ -79,9 +79,7 @@ def load_images_and_frequencies(image_folder, csv_folder, img_size=(64, 64)):
         img = load_img(img_path)
         img = img_to_array(img)
         height, width, _ = img.shape
-        
-        img = img[height//2:, width//2:, :]
-        #img = img[:height//2, :width//2, :]  # Crop to quarter
+        img = img[:height//2, :width//2, :]  # Crop to quarter
         img = tf.image.resize(img, img_size)
         img = (img - 127.5) / 127.5  # Normalize to [-1, 1]
         images.append(img)
@@ -103,73 +101,34 @@ def load_generator_model(model_path):
         })
         return load_model(model_path, compile=False)
 
-# ===================== PATTERN GENERATION =====================
-class PatternGenerator:
-    def __init__(self, model_path):
-        self.generator = load_generator_model(model_path)
-        self.latent_dim = 32
-        self.freq_mean, self.freq_std = self._get_frequency_stats()
-    
-    def _get_frequency_stats(self):
-        image_folder = r"C:\Users\atade\Desktop\14348_VERi\resim128_NET"
-        csv_folder = r"C:\Users\atade\Desktop\14348_VERi\Tüm_csv"
-        _, frequencies = load_images_and_frequencies(image_folder, csv_folder)
-        return np.mean(frequencies), np.std(frequencies)
-    
-    def generate_quarter_pattern(self, frequency):
-        """Generates a single quarter pattern for given frequency"""
-        normalized_freq = (frequency - self.freq_mean) / self.freq_std
-        noise = np.random.normal(0, 1, (1, self.latent_dim))
-        generated_image = self.generator.predict([noise, np.array([[normalized_freq]])], verbose=0)
-        return 0.5 * generated_image[0] + 0.5  # Convert to [0,1] range
-    
-    def clean_8x8_blocks(self, image, threshold=0.5):
-        """Post-processing to clean up 8x8 blocks"""
-        h, w = image.shape[:2]
-        cleaned = image.copy()
-        
-        for y in range(0, h, 8):
-            for x in range(0, w, 8):
-                block = image[y:y+8, x:x+8]
-                avg = np.mean(block)
-                cleaned[y:y+8, x:x+8] = 1 if avg > threshold else 0
-        return cleaned
-    
-    def save_pattern(self, pattern, output_path, dpi=300):
-        """Saves the generated pattern"""
-        plt.figure(figsize=(5, 5))
-        plt.imshow(pattern, interpolation='nearest', cmap='gray')
-        plt.axis('off')
-        plt.tight_layout()
-        plt.savefig(output_path, bbox_inches='tight', pad_inches=0, dpi=dpi)
-        plt.close()
-    
-    def generate_and_save(self, frequency, output_dir="generated_patterns"):
-        """Full pipeline: generate, clean, and save pattern"""
-        if not os.path.exists(output_dir):
-            os.makedirs(output_dir)
-        
-        output_path = os.path.join(output_dir, f"pattern_freq_{frequency}.png")
-        pattern = self.generate_quarter_pattern(frequency)
-        
-        # Convert to grayscale and clean blocks
-        pattern_gray = np.mean(pattern, axis=-1, keepdims=True)
-        pattern_cleaned = self.clean_8x8_blocks(pattern_gray)
-        
-        self.save_pattern(pattern_cleaned, output_path)
-        print(f"Frekans {frequency} için desen {output_path} kaydedildi.")
 
-# ===================== MAIN EXECUTION =====================
-if __name__ == "__main__":
-    # Initialize with your model path
-    MODEL_PATH = r"C:\Users\atade\Desktop\LIFT_UP_CNN\Frekanslıgenerator_model30_nisan.h5"
-    
-    generator = PatternGenerator(MODEL_PATH)
-    
-    # Generate for specific frequencies
-    test_frequencies = range(6, 21)  # Or specific frequencies [6, 10, 15, etc.]
-    
-    for freq in test_frequencies:
-        generator.generate_and_save(freq, "generated_patterns")
-    
-    print("Tüm desenler başarıyla oluşturuldu ve kaydedildi.")
+
+
+
+import matplotlib.pyplot as plt
+import pandas as pd
+
+# Frekansları al
+image_folder = r"C:\Users\atade\Desktop\14348_VERi\resim128_NET"
+csv_folder = r"C:\Users\atade\Desktop\14348_VERi\Tüm_csv"
+
+_, frequencies = load_images_and_frequencies(image_folder, csv_folder)
+
+# Pandas ile frekans dağılımını al
+freq_series = pd.Series(frequencies)
+freq_counts = freq_series.value_counts().sort_index()
+
+# Tablo olarak yazdır
+print("Frekans Dağılımı:")
+print(freq_counts)
+
+# Matplotlib ile çubuk grafik çiz
+plt.figure(figsize=(12, 6))
+plt.bar(freq_counts.index, freq_counts.values, color='skyblue')
+plt.title("Frekanslara Göre Örnek Sayısı Dağılımı")
+plt.xlabel("Frekans Değeri")
+plt.ylabel("Örnek Sayısı")
+plt.xticks(rotation=45)
+plt.grid(axis='y', linestyle='--', alpha=0.7)
+plt.tight_layout()
+plt.show()

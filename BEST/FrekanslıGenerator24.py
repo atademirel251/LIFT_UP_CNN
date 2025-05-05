@@ -97,7 +97,8 @@ def load_images_and_frequencies(image_folder, csv_folder, img_size=(64, 64)):
         img = img_to_array(img)
         height, width, _ = img.shape
         #img = img[height//2:, width//2:, :]  # Crop the image
-        img = img[:height//2, :width//2, :] 
+        img = img[height//2:, width//2:, :]
+
         img = tf.image.resize(img, img_size)  # Resize the image
         img = (img - 127.5) / 127.5  # Normalize to [-1, 1]
         images.append(img)
@@ -112,8 +113,8 @@ def load_images_and_frequencies(image_folder, csv_folder, img_size=(64, 64)):
     return np.array(images), np.array(frequencies)
 
 # Load images and frequencies
-image_folder = r"C:\Users\atade\Desktop\13579_veri\resim128_opencv_rgb"
-csv_folder = r"C:\Users\atade\Desktop\13579_veri\Tüm_csv"
+image_folder = r"C:\Users\atade\Desktop\14348_VERi\resim128_NET"
+csv_folder = r"C:\Users\atade\Desktop\14348_VERi\Tüm_csv"
 images, frequencies = load_images_and_frequencies(image_folder, csv_folder)
 
 # Normalize frequencies to [-1, 1]
@@ -227,10 +228,10 @@ discriminator.compile(loss='binary_crossentropy', optimizer=Adam(0.0001, 0.5), m
 
 generator = build_generator(latent_dim)
 gan = build_gan(generator, discriminator, latent_dim, lambda_symmetry=10, lambda_homogeneity=5)  # 🔹 lambda_homogeneity eklendi
-gan.compile(loss='binary_crossentropy', optimizer=Adam(0.0006, 0.5))
+gan.compile(loss='binary_crossentropy', optimizer=Adam(0.0008, 0.5))
 
 # Training function
-def train_gan(gan, generator, discriminator, images, frequencies, latent_dim, epochs=30000, batch_size=16, save_interval=500):
+def train_gan(gan, generator, discriminator, images, frequencies, latent_dim, epochs=10000, batch_size=16, save_interval=500):
     half_batch = batch_size // 2
     for epoch in range(epochs):
         # Select real images and corresponding frequencies
@@ -268,11 +269,16 @@ def save_images(generator, epoch, latent_dim, frequencies, examples=4):
     generated_images = 0.5 * generated_images + 0.5  # Rescale to [0, 1]
 
     for i in range(examples):
-        img = generated_images[i]
-        img_flipped_x = np.flip(img, axis=1)
-        top_row = np.concatenate((img, img_flipped_x), axis=1)
-        bottom_row = np.flip(top_row, axis=0)
-        pattern_image = np.concatenate((top_row, bottom_row), axis=0)
+        img = generated_images[i]  # Sağ alt çeyrek
+        img_flipped_x = np.flip(img, axis=0)  # Y ekseninde flip (aşağı yukarı)
+
+        # Sağ alt ve sağ üstü birleştir
+        right_half = np.concatenate((img_flipped_x, img), axis=0)
+
+        right_half_flipped_y = np.flip(right_half, axis=1)  # X ekseninde flip (sağ-sol)
+
+        # Sağ ve sol yarıları birleştir
+        pattern_image = np.concatenate((right_half_flipped_y, right_half), axis=1)
 
         plt.figure()
         plt.imshow(pattern_image, interpolation='nearest')
@@ -283,4 +289,4 @@ def save_images(generator, epoch, latent_dim, frequencies, examples=4):
 
 # Train GAN model
 train_gan(gan, generator, discriminator, images, frequencies, latent_dim)
-generator.save("generator_model24_nisan.h5")
+generator.save("Frekanslıgenerator_model28_nisan.h5")

@@ -4,6 +4,9 @@ from tensorflow.keras.models import load_model
 from PIL import Image
 import matplotlib.pyplot as plt
 import tensorflow.keras.backend as K
+import csv
+import os
+import pandas as pd
 
 # GPU Ayarları
 physical_devices = tf.config.list_physical_devices('GPU')
@@ -44,26 +47,27 @@ def predict_s21_from_image(model, image_path):
     return frekans, s21, (w, h), img
 
 # Modeli Yükle
-model_path = r"C:/Users/atade/Desktop/test_sonuçları/VGG16+TEST/model/13579Düzenlenmis1_64x64+15katman+ınterpolatıon7.keras"
+model_path = r"C:\Users\atade\Desktop\test_sonuçları\VGG16+TEST\model\14348Düzenlenmis1_64x64+15katman+ınterpolatıon7.keras"
 model = load_model(model_path, custom_objects={'weighted_loss': weighted_loss})
 
 # Kullanım Örneği
-image_path1 = r"C:\Users\atade\Desktop\Picture1.jpg"
+image_path1 = r"C:\Users\atade\Desktop\LIFT_UP_CNN\generated_patterns\pattern_freq_19.png"
 freq1, s21_1, img_size1, img1 = predict_s21_from_image(model, image_path1)
 
 # Flip işlemleri
-top_row = np.concatenate((np.array(img1), np.flip(np.array(img1), axis=1)), axis=1)
-bottom_row = np.flip(top_row, axis=0)
-pattern_image = np.concatenate((top_row, bottom_row), axis=0)
+img_flipped_x = np.flip(img1, axis=0)  # Y ekseninde flip (aşağı yukarı)
+
+        # Sağ alt ve sağ üstü birleştir
+right_half = np.concatenate((img_flipped_x, img1), axis=0)
+
+right_half_flipped_y = np.flip(right_half, axis=1)  # X ekseninde flip (sağ-sol)
+
+        # Sağ ve sol yarıları birleştir
+pattern_image = np.concatenate((right_half_flipped_y, right_half), axis=1)
 
 # Sonuçları Görselleştirme
 plt.figure(figsize=(15, 6))
 
-# 1. Orijinal Görsel
-""" plt.subplot(1, 3, 1)
-plt.imshow(img1)
-plt.title(f"Orijinal Görsel ({img_size1[0]}x{img_size1[1]})")
-plt.axis('off') """
 
 # 2. Flip Yatay-Dikey Uygulanan Görsel
 plt.subplot(1, 2, 1)
@@ -82,7 +86,44 @@ plt.legend()
 
 plt.tight_layout()
 plt.show()
-
 # Sayısal Çıktılar
 print(f"\n1. Görsel ({img_size1[0]}x{img_size1[1]}) için S21 Değerleri:")
 print(f"Min S21: {np.min(s21_1):.2f} dB @ {freq1[np.argmin(s21_1)]:.2f} GHz")
+
+
+
+
+# external_csv_path = r"C:\Users\atade\Desktop\LIFT_UP_ÇIKTILAR\ornek_5\30Nisan_11_18GHz.csv"
+
+# df = pd.read_csv(external_csv_path, header=0)
+#  #CSV'den frekans ve S21 sütunlarını al
+# freq_external = df.iloc[:, 0].values
+# s21_external = df.iloc[:, 1].values
+
+# # Sonuçları Görselleştirme
+# plt.figure(figsize=(15, 6))
+
+# # 1. Görsel (Flip uygulanmış)
+# plt.subplot(1, 2, 1)
+# plt.imshow(pattern_image)
+# plt.title("Flip Uygulanmış Görsel")
+# plt.axis('off')
+
+# # 2. S21 Grafiği
+# plt.subplot(1, 2, 2)
+# plt.plot(freq1, s21_1, 'r-', label='Tahmin (Model)')  # Tahmin edilen: Kırmızı çizgi
+# plt.plot(freq_external, s21_external, 'g--', label='Gerçek HFSS Simulasyon (CSV)')  # Dış CSV verisi: Yeşil kesikli
+# plt.xlabel('Frekans (GHz)')
+# plt.ylabel('S21 (dB)')
+# plt.title('S21 Karşılaştırması')
+# plt.xlim(2, 20)
+# plt.ylim(-35, 0)
+# plt.grid(True)
+# plt.legend()
+
+# plt.tight_layout()
+# plt.show() 
+
+
+
+
