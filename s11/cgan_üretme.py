@@ -73,19 +73,29 @@ def load_images_and_frequencies(image_folder, csv_folder, img_size=(64, 64)):
         df = pd.read_csv(csv_path)
 
         if df.shape[1] >= 2:
-            # 5'ten büyük frekansları filtrele (yani 6-20 arası)
-            filtered_df = df[df.iloc[:, 0] > 5]
+            # 5'ten büyük frekansları filtrele
+            filtered_df = df[df.iloc[:, 0] > 5].reset_index(drop=True)
 
             if not filtered_df.empty:
-                # Bu aralıktaki frekanslardan en yüksek dB (en az negatif) değerine sahip olanı bul
-                max_db_index = filtered_df.iloc[:, 1].idxmax()
-                freq_value = df.iloc[max_db_index, 0]
-                frequencies.append(int(freq_value))
+                db_values = filtered_df.iloc[:, 1]
+                min_db_index = db_values.idxmin()
+
+                # Minimum dB değerinden sonraki verileri al
+                post_min_df = filtered_df.iloc[min_db_index + 1:]
+
+                if not post_min_df.empty:
+                    max_db_index = post_min_df.iloc[:, 1].idxmax()
+                    freq_value = post_min_df.loc[max_db_index, post_min_df.columns[0]]
+                    frequencies.append(round(freq_value))
+                else:
+                    print(f"{csv_file} içinde global min dB'den sonra veri yok. Atlanıyor.")
+                    frequencies.append(0)
             else:
                 print(f"{csv_file} içinde 5 üstü frekans bulunamadı. Atlanıyor.")
                 frequencies.append(0)
         else:
             print(f"Hatalı CSV formatı: {csv_file}. Atlanıyor.")
+            frequencies.append(0)
 
     # Resimleri aynı sırayla yükle
     image_files = natsorted([f for f in os.listdir(image_folder) if f.endswith((".png", ".jpg"))])
@@ -132,8 +142,8 @@ class PatternGenerator:
         self.freq_mean, self.freq_std = self._get_frequency_stats()
     
     def _get_frequency_stats(self):
-        image_folder = r"C:\Users\atade\Desktop\14348_VERi\resim128_NET"
-        csv_folder = r"C:\Users\atade\Desktop\14348_VERi\Tüm_csv"
+        image_folder = r"C:\Users\atade\Desktop\veri_seti\s11_resim"
+        csv_folder = r"C:\Users\atade\Desktop\veri_seti\s11_csv"
         _, frequencies = load_images_and_frequencies(image_folder, csv_folder)
         return np.mean(frequencies), np.std(frequencies)
     
@@ -183,12 +193,12 @@ class PatternGenerator:
 # ===================== MAIN EXECUTION =====================
 if __name__ == "__main__":
     # Initialize with your model path
-    MODEL_PATH = r"C:\Users\atade\Desktop\LIFT_UP_CNN\Frekanslıgenerator_model12_mayıs2.h5"
+    MODEL_PATH = r"C:\Users\atade\Desktop\LIFT_UP_CNN\Frekanslıgenerator_model12_mayıs3.h5"
     
     generator = PatternGenerator(MODEL_PATH)
     
     # Generate for specific frequencies
-    test_frequencies = range(2, 20)  # Or specific frequencies [6, 10, 15, etc.]
+    test_frequencies = range(8, 20)  # Or specific frequencies [6, 10, 15, etc.]
     
     for freq in test_frequencies:
         generator.generate_and_save(freq, "generated_patterns")

@@ -87,19 +87,29 @@ def load_images_and_frequencies(image_folder, csv_folder, img_size=(64, 64)):
         df = pd.read_csv(csv_path)
 
         if df.shape[1] >= 2:
-            # 5'ten büyük frekansları filtrele (yani 6-20 arası)
-            filtered_df = df[df.iloc[:, 0] > 5]
+            # 5'ten büyük frekansları filtrele
+            filtered_df = df[df.iloc[:, 0] > 5].reset_index(drop=True)
 
             if not filtered_df.empty:
-                # Bu aralıktaki frekanslardan en yüksek dB (en az negatif) değerine sahip olanı bul
-                max_db_index = filtered_df.iloc[:, 1].idxmax()
-                freq_value = df.iloc[max_db_index, 0]
-                frequencies.append(int(freq_value))
+                db_values = filtered_df.iloc[:, 1]
+                min_db_index = db_values.idxmin()
+
+                # Minimum dB değerinden sonraki verileri al
+                post_min_df = filtered_df.iloc[min_db_index + 1:]
+
+                if not post_min_df.empty:
+                    max_db_index = post_min_df.iloc[:, 1].idxmax()
+                    freq_value = post_min_df.loc[max_db_index, post_min_df.columns[0]]
+                    frequencies.append(round(freq_value))
+                else:
+                    print(f"{csv_file} içinde global min dB'den sonra veri yok. Atlanıyor.")
+                    frequencies.append(0)
             else:
                 print(f"{csv_file} içinde 5 üstü frekans bulunamadı. Atlanıyor.")
                 frequencies.append(0)
         else:
             print(f"Hatalı CSV formatı: {csv_file}. Atlanıyor.")
+            frequencies.append(0)
 
     # Resimleri aynı sırayla yükle
     image_files = natsorted([f for f in os.listdir(image_folder) if f.endswith((".png", ".jpg"))])
@@ -125,9 +135,10 @@ def load_images_and_frequencies(image_folder, csv_folder, img_size=(64, 64)):
 
 
 
+
 # Load images and frequencies
-image_folder = r"C:\Users\atade\Desktop\14348_VERi\resim128_NET"
-csv_folder = r"C:\Users\atade\Desktop\14348_VERi\Tüm_csv"
+image_folder = r"C:\Users\atade\Desktop\veri_seti\s11_resim"
+csv_folder = r"C:\Users\atade\Desktop\veri_seti\s11_csv"
 images, frequencies = load_images_and_frequencies(image_folder, csv_folder)
 
 # Normalize frequencies to [-1, 1]
@@ -244,7 +255,7 @@ gan = build_gan(generator, discriminator, latent_dim, lambda_symmetry=10, lambda
 gan.compile(loss='binary_crossentropy', optimizer=Adam(0.0008, 0.5))
 
 # Training function
-def train_gan(gan, generator, discriminator, images, frequencies, latent_dim, epochs=3000, batch_size=16, save_interval=500):
+def train_gan(gan, generator, discriminator, images, frequencies, latent_dim, epochs=6000, batch_size=16, save_interval=500):
     half_batch = batch_size // 2
     for epoch in range(epochs):
         # Select real images and corresponding frequencies
@@ -302,4 +313,4 @@ def save_images(generator, epoch, latent_dim, frequencies, examples=4):
 
 # Train GAN model
 train_gan(gan, generator, discriminator, images, frequencies, latent_dim)
-generator.save("Frekanslıgenerator_model12_mayıs2.h5")
+generator.save("Frekanslıgenerator_model12_mayıs3.h5")

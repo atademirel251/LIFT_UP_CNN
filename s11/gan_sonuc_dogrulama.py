@@ -51,7 +51,7 @@ model_path = r"C:\Users\atade\Desktop\test_sonuçları\VGG16+TEST\model\14348Dü
 model = load_model(model_path, custom_objects={'weighted_loss': weighted_loss})
 
 # Kullanım Örneği
-image_path1 = r"C:\Users\atade\Desktop\LIFT_UP_CNN\generated_patterns\pattern_freq_9.png"
+image_path1 = r"C:\Users\atade\Desktop\LIFT_UP_CNN\generated_patterns\pattern_freq_15.png"
 freq1, s21_1, img_size1, img1 = predict_s21_from_image(model, image_path1)
 
 # Flip işlemleri
@@ -77,14 +77,29 @@ plt.axis('off')
 
 # 2. S21 Parametreleri
 plt.subplot(1, 2, 2)
-plt.plot(freq1, s21_1, 'b-', label='Tahmin 1')
+plt.plot(freq1, s21_1, 'b-', label='')
 
-# Maksimum değeri kontrol et ve işaretle
-max_s21 = np.max(s21_1)
-max_freq = freq1[np.argmax(s21_1)]
+min_index = np.argmin(s21_1)
 
-if max_s21 < 0.5:
-    plt.plot(max_freq, max_s21, 'ro', label=f'Max S21 < 0.5 dB\n({max_s21:.2f} dB @ {max_freq:.2f} GHz)')
+# Minimumdan sonraki kısmı al
+post_min_s21 = s21_1[min_index + 1:]
+post_min_freq = freq1[min_index + 1:]
+
+# Maksimum değeri ve karşılık gelen frekansı bul
+max_index_post_min = np.argmax(post_min_s21)
+max_s21 = post_min_s21[max_index_post_min]
+max_freq = post_min_freq[max_index_post_min]
+
+# Grafik çizimi
+plt.plot(freq1, s21_1, label='S21 Eğrisi')
+plt.plot(max_freq, max_s21, 'ro')  # Maksimum noktayı kırmızı nokta ile işaretle
+plt.text(max_freq, max_s21, f'{max_freq:.2f} GHz', color='red', fontsize=9, ha='left', va='bottom')
+
+plt.xlabel('Frekans (GHz)')
+plt.ylabel('S21 (dB)')
+plt.title('S21 Grafiği ve Max dB Noktası')
+plt.legend()
+plt.grid(True)
 
 plt.xlabel('Frekans (GHz)')
 plt.ylabel('S21 (dB)')
@@ -97,41 +112,7 @@ plt.show()
 
 # Sayısal Çıktılar
 print(f"\n1. Görsel ({img_size1[0]}x{img_size1[1]}) için S21 Değerleri:")
-print(f"Min S21: {np.min(s21_1):.2f} dB @ {freq1[np.argmin(s21_1)]:.2f} GHz")
-
-
-
-
-# external_csv_path = r"C:\Users\atade\Desktop\LIFT_UP_ÇIKTILAR\ornek_5\30Nisan_11_18GHz.csv"
-
-# df = pd.read_csv(external_csv_path, header=0)
-#  #CSV'den frekans ve S21 sütunlarını al
-# freq_external = df.iloc[:, 0].values
-# s21_external = df.iloc[:, 1].values
-
-# # Sonuçları Görselleştirme
-# plt.figure(figsize=(15, 6))
-
-# # 1. Görsel (Flip uygulanmış)
-# plt.subplot(1, 2, 1)
-# plt.imshow(pattern_image)
-# plt.title("Flip Uygulanmış Görsel")
-# plt.axis('off')
-
-# # 2. S21 Grafiği
-# plt.subplot(1, 2, 2)
-# plt.plot(freq1, s21_1, 'r-', label='Tahmin (Model)')  # Tahmin edilen: Kırmızı çizgi
-# plt.plot(freq_external, s21_external, 'g--', label='Gerçek HFSS Simulasyon (CSV)')  # Dış CSV verisi: Yeşil kesikli
-# plt.xlabel('Frekans (GHz)')
-# plt.ylabel('S21 (dB)')
-# plt.title('S21 Karşılaştırması')
-# plt.xlim(2, 20)
-# plt.ylim(-35, 0)
-# plt.grid(True)
-# plt.legend()
-
-# plt.tight_layout()
-# plt.show() 
+print(f"Max S21: {max_freq:.2f} GHz")
 
 
 
