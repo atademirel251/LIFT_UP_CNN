@@ -27,5 +27,5 @@ def process_images(input_folder):
             print(f"İşlenmiş resim kaydedildi: {save_path}")
 
 # Örnek klasör yolu
-input_folder = r"C:\Users\atade\Desktop\EREN_Veriler\e9\cropped_img"
+input_folder = r"C:\Users\atade\Desktop\s11_3\desenler3"
 process_images(input_folder)

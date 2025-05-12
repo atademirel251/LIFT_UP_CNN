@@ -3,8 +3,8 @@ import pandas as pd
 from natsort import natsorted  # natsort kütüphanesini ekleyin
 
 # Klasörlerinizin path'lerini belirtin
-image_folder = r"C:\Users\atade\Desktop\12386_veri\Resized"
-csv_folder = r"C:\Users\atade\Desktop\12386_veri\Tüm_csv"
+image_folder = r"C:\Users\atade\Desktop\s11_dataset\img"
+csv_folder = r"C:\Users\atade\Desktop\s11_dataset\csv"
 
 # Gizli dosyaları ve istenmeyen dosyaları filtrele
 image_files = natsorted(

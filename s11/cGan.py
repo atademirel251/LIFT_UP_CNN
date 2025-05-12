@@ -69,25 +69,38 @@ def diagonal_symmetry_loss(y_pred):
     return symmetry_loss
 
 
+import os
+import pandas as pd
+import numpy as np
+from natsort import natsorted
+import tensorflow as tf
+from tensorflow.keras.preprocessing.image import load_img, img_to_array
+
 def load_images_and_frequencies(image_folder, csv_folder, img_size=(64, 64)):
     images = []
     frequencies = []
-    
-    # CSV dosyalarını doğal sıralama ile oku
+
     csv_files = natsorted([f for f in os.listdir(csv_folder) if f.endswith(".csv")])
     
     for csv_file in csv_files:
-        # CSV'den frekansı oku ve integer'a yuvarla
         csv_path = os.path.join(csv_folder, csv_file)
         df = pd.read_csv(csv_path)
-        
+
         if df.shape[1] >= 2:
-            min_dB_index = df.iloc[:, 1].idxmin()
-            freq_value = df.iloc[min_dB_index, 0]
-            frequencies.append(int(round(freq_value)))  # Yuvarlama ve integer dönüşüm
+            # 5'ten büyük frekansları filtrele (yani 6-20 arası)
+            filtered_df = df[df.iloc[:, 0] > 5]
+
+            if not filtered_df.empty:
+                # Bu aralıktaki frekanslardan en yüksek dB (en az negatif) değerine sahip olanı bul
+                max_db_index = filtered_df.iloc[:, 1].idxmax()
+                freq_value = df.iloc[max_db_index, 0]
+                frequencies.append(int(freq_value))
+            else:
+                print(f"{csv_file} içinde 5 üstü frekans bulunamadı. Atlanıyor.")
+                frequencies.append(0)
         else:
             print(f"Hatalı CSV formatı: {csv_file}. Atlanıyor.")
-    
+
     # Resimleri aynı sırayla yükle
     image_files = natsorted([f for f in os.listdir(image_folder) if f.endswith((".png", ".jpg"))])
     
@@ -96,25 +109,25 @@ def load_images_and_frequencies(image_folder, csv_folder, img_size=(64, 64)):
         img = load_img(img_path)
         img = img_to_array(img)
         height, width, _ = img.shape
-        #img = img[height//2:, width//2:, :]  # Crop the image
-        img = img[height//2:, width//2:, :]
+        img = img[height//2:, width//2:, :]  # Resmi kırp
 
-        img = tf.image.resize(img, img_size)  # Resize the image
-        img = (img - 127.5) / 127.5  # Normalize to [-1, 1]
+        img = tf.image.resize(img, img_size)  # Yeniden boyutlandır
+        img = (img - 127.5) / 127.5  # Normalize et [-1, 1]
         images.append(img)
     
     print(f"Yüklenen resim sayısı: {len(images)}, frekans sayısı: {len(frequencies)}")
-    
-    # Resim ve CSV sayısı eşit mi kontrol et
+
     if len(images) != len(frequencies):
         raise ValueError(f"Resim sayısı ({len(images)}) ve CSV sayısı ({len(frequencies)}) eşit değil!")
-    
-    print(f"Örnek frekans değerleri: {np.unique(frequencies)}")  # Benzersiz frekansları göster
+
+    print(f"Örnek frekans değerleri: {np.unique(frequencies)}")
     return np.array(images), np.array(frequencies)
 
+
+
 # Load images and frequencies
-image_folder = r"C:\Users\atade\Desktop\s11_dataset\img"
-csv_folder = r"C:\Users\atade\Desktop\s11_dataset\csv"
+image_folder = r"C:\Users\atade\Desktop\14348_VERi\resim128_NET"
+csv_folder = r"C:\Users\atade\Desktop\14348_VERi\Tüm_csv"
 images, frequencies = load_images_and_frequencies(image_folder, csv_folder)
 
 # Normalize frequencies to [-1, 1]
@@ -284,9 +297,9 @@ def save_images(generator, epoch, latent_dim, frequencies, examples=4):
         plt.imshow(pattern_image, interpolation='nearest')
         plt.axis('off')
         plt.tight_layout()
-        plt.savefig(f"TALHAgan_patternSON_epoch_{epoch}_sample_{i}.png")
+        plt.savefig(f"S11gan2_patternSON_epoch_{epoch}_sample_{i}.png")
         plt.close()
 
 # Train GAN model
 train_gan(gan, generator, discriminator, images, frequencies, latent_dim)
-generator.save("Frekanslıgenerator_model12_mayıs.h5")
+generator.save("Frekanslıgenerator_model12_mayıs2.h5")

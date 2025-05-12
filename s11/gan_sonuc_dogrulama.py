@@ -51,7 +51,7 @@ model_path = r"C:\Users\atade\Desktop\test_sonuçları\VGG16+TEST\model\14348Dü
 model = load_model(model_path, custom_objects={'weighted_loss': weighted_loss})
 
 # Kullanım Örneği
-image_path1 = r"C:\Users\atade\Desktop\LIFT_UP_CNN\generated_patterns\pattern_freq_8.png"
+image_path1 = r"C:\Users\atade\Desktop\LIFT_UP_CNN\generated_patterns\pattern_freq_9.png"
 freq1, s21_1, img_size1, img1 = predict_s21_from_image(model, image_path1)
 
 # Flip işlemleri
@@ -66,18 +66,26 @@ right_half_flipped_y = np.flip(right_half, axis=1)  # X ekseninde flip (sağ-sol
 pattern_image = np.concatenate((right_half_flipped_y, right_half), axis=1)
 
 # Sonuçları Görselleştirme
+# Sonuçları Görselleştirme
 plt.figure(figsize=(15, 6))
 
-
-# 2. Flip Yatay-Dikey Uygulanan Görsel
+# 1. Görsel (Flip uygulanmış desen)
 plt.subplot(1, 2, 1)
 plt.imshow(pattern_image)
 plt.title("Flip Uygulanmış Görsel")
 plt.axis('off')
 
-# 3. S21 Parametreleri
+# 2. S21 Parametreleri
 plt.subplot(1, 2, 2)
 plt.plot(freq1, s21_1, 'b-', label='Tahmin 1')
+
+# Maksimum değeri kontrol et ve işaretle
+max_s21 = np.max(s21_1)
+max_freq = freq1[np.argmax(s21_1)]
+
+if max_s21 < 0.5:
+    plt.plot(max_freq, max_s21, 'ro', label=f'Max S21 < 0.5 dB\n({max_s21:.2f} dB @ {max_freq:.2f} GHz)')
+
 plt.xlabel('Frekans (GHz)')
 plt.ylabel('S21 (dB)')
 plt.title('Tahmini S21 Parametreleri')
@@ -86,9 +94,10 @@ plt.legend()
 
 plt.tight_layout()
 plt.show()
+
 # Sayısal Çıktılar
 print(f"\n1. Görsel ({img_size1[0]}x{img_size1[1]}) için S21 Değerleri:")
-print(f"Maks S21: {np.max(s21_1):.2f} dB @ {freq1[np.argmax(s21_1)]:.2f} GHz")
+print(f"Min S21: {np.min(s21_1):.2f} dB @ {freq1[np.argmin(s21_1)]:.2f} GHz")
 
 
 

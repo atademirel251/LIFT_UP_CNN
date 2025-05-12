@@ -117,8 +117,8 @@ def load_data_in_order(image_folder, csv_folder, max_length=101, local_min_thres
     return np.array(images, dtype=np.float32), np.array(outputs, dtype=np.float32)  
 
 # Veri klasörleri
-image_folder = r"C:\Users\atade\Desktop\s11_dataset\img"
-csv_folder = r"C:\Users\atade\Desktop\s11_dataset\csv"
+image_folder = r"C:\Users\atade\Desktop\14348_VERi\resim128_NET"
+csv_folder = r"C:\Users\atade\Desktop\14348_VERi\Tüm_csv"
 
 # Veriyi yükle
 images, s21_params = load_data_in_order(image_folder, csv_folder, max_length=101)
@@ -199,6 +199,28 @@ example_output = y_test[example_index]
 
 predicted_output = model.predict(example_input[np.newaxis, ...])[0].reshape(-1, 2)
 
+# Gerçek ve tahmini veriler
+freqs_true = example_output[:, 0]
+s21_true = example_output[:, 1]
+
+freqs_pred = predicted_output[:, 0]
+s21_pred = predicted_output[:, 1]
+
+# 5 GHz'den sonraki kısımları filtrele
+mask_true = freqs_true >= 5.0
+mask_pred = freqs_pred >= 5.0
+
+# Maksimum değeri ve karşılık geldiği frekansı bul (gerçek)
+max_idx_true = np.argmax(s21_true[mask_true])
+freq_max_true = freqs_true[mask_true][max_idx_true]
+s21_max_true = s21_true[mask_true][max_idx_true]
+
+# Maksimum değeri ve karşılık geldiği frekansı bul (tahmin)
+max_idx_pred = np.argmax(s21_pred[mask_pred])
+freq_max_pred = freqs_pred[mask_pred][max_idx_pred]
+s21_max_pred = s21_pred[mask_pred][max_idx_pred]
+
+# Görselleştirme
 plt.figure(figsize=(14, 6))
 
 plt.subplot(1, 2, 1)
@@ -207,16 +229,22 @@ plt.title("Test Girdisi (Geometrik Desen)")
 plt.axis('off')
 
 plt.subplot(1, 2, 2)
-plt.plot(example_output[:, 0], example_output[:, 1], label="Gerçek Değer", linestyle='none', marker='o', alpha=0.7)
-plt.plot(predicted_output[:, 0], predicted_output[:, 1], label="Tahmin Değer", linestyle='none', marker='x', alpha=0.7)
+plt.plot(freqs_true, s21_true, label="Gerçek", linestyle='-', marker='o', alpha=0.6)
+plt.plot(freqs_pred, s21_pred, label="Tahmin", linestyle='--', marker='x', alpha=0.6)
+
+# Maksimum noktaları işaretle
+plt.scatter(freq_max_true, s21_max_true, color='green', label=f'Gerçek Maks: {freq_max_true:.2f} GHz', zorder=5)
+plt.scatter(freq_max_pred, s21_max_pred, color='red', label=f'Tahmin Maks: {freq_max_pred:.2f} GHz', zorder=5)
+
 plt.xlabel("Frekans (GHz)")
-plt.ylabel("S21 Parametre Değeri")
-plt.title("Gerçek ve Tahmini S21 Grafiği")
+plt.ylabel("S21 Parametre (dB)")
+plt.title("Gerçek ve Tahmini S21 Grafiği\n(5 GHz sonrası Maksimum Değerler)")
 plt.legend()
 plt.grid(True)
 
 plt.tight_layout()
 plt.show()
+
 
 def mean_absolute_percentage_error(y_true, y_pred):
     return np.mean(np.abs((y_true - y_pred) / (y_true + 1e-8))) * 100

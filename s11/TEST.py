@@ -124,31 +124,57 @@ mape_score = mean_absolute_percentage_error(y_test, y_pred)
 print(f"Test Seti İçin MAPE: {mape_score:.2f}%") 
 
 
-# **Kullanıcıya 18. indeksin ORİJİNAL görüntüsünü göster**
-example_index = 50
-example_original = images_original[example_index]  # Orijinal görüntü (128x128)
-example_input = X_test[example_index]  # Modelin kullandığı görüntü (64x64)
-example_output = y_test[example_index]
-predicted_output = y_pred[example_index]
+import numpy as np
+import matplotlib.pyplot as plt
 
+# Örnek indeks seç
+example_index = 120
+
+# Verileri al
+example_original = images_original[example_index]      # 128x128 orijinal desen
+example_input = X_test[example_index]                  # 64x64 model girdisi
+example_output = y_test[example_index]                 # Gerçek S21
+predicted_output = y_pred[example_index]               # Tahmin edilen S21
 
 plt.figure(figsize=(14, 6))
 
-# **Orijinal görüntüyü göster**
+# Orijinal görüntüyü göster
 plt.subplot(1, 2, 1)
 plt.imshow(example_original)
-plt.title(" Orijinal Geometrik Desen")
+plt.title("Orijinal Geometrik Desen")
 plt.axis('off')
 
-# **Tahmini vs Gerçek Değeri Çiz**
+# S21 karşılaştırma grafiği
 plt.subplot(1, 2, 2)
 plt.plot(example_output[:, 0], example_output[:, 1], label="Gerçek Değer", linestyle='none', marker='o', alpha=0.7)
 plt.plot(predicted_output[:, 0], predicted_output[:, 1], label="Tahmin Değer", linestyle='none', marker='x', alpha=0.7)
+
+# 5 GHz sonrası maksimum tahmini değer hesapla
+frequencies = predicted_output[:, 0]
+s21_values = predicted_output[:, 1]
+mask_5ghz = frequencies > 5.0
+
+frequencies_after_5ghz = frequencies[mask_5ghz]
+s21_after_5ghz = s21_values[mask_5ghz]
+
+if len(s21_after_5ghz) > 0:
+    max_index = np.argmax(s21_after_5ghz)
+    max_s21_value = s21_after_5ghz[max_index]
+    max_freq = frequencies_after_5ghz[max_index]
+
+    # Maksimum değeri grafikte göster
+    plt.plot(max_freq, max_s21_value, 'ro', label=f"Maksimum Tahmin: {max_s21_value:.2f} @ {max_freq:.2f} GHz")
+    plt.annotate(f"{max_s21_value:.2f} @ {max_freq:.2f} GHz", (max_freq, max_s21_value),
+                 textcoords="offset points", xytext=(0,10), ha='center', color='red')
+    
+    print(f"5 GHz'den sonraki maksimum tahmini S21 değeri: {max_s21_value:.4f} @ {max_freq:.4f} GHz")
+else:
+    print("5 GHz'den sonraki frekans aralığında tahmin edilen veri bulunamadı.")
+
 plt.xlabel("Frekans (GHz)")
 plt.ylabel("S21 Parametre Değeri")
 plt.title("Gerçek ve Tahmini S21 Grafiği")
 plt.legend()
 plt.grid(True)
-
 plt.tight_layout()
 plt.show()
