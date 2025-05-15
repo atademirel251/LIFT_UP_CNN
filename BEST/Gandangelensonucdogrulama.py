@@ -51,7 +51,7 @@ model_path = r"C:\Users\atade\Desktop\test_sonuçları\VGG16+TEST\model\14348Dü
 model = load_model(model_path, custom_objects={'weighted_loss': weighted_loss})
 
 # Kullanım Örneği
-image_path1 = r"C:\Users\atade\Desktop\LIFT_UP_CNN\generated_patterns\pattern_freq_12.png"
+image_path1 = r"C:\Users\atade\Desktop\LIFT_UP_CNN\generated_patterns\pattern_freq_19.png"
 freq1, s21_1, img_size1, img1 = predict_s21_from_image(model, image_path1)
 
 # Flip işlemleri
@@ -84,11 +84,23 @@ plt.title('Tahmini S21 Parametreleri')
 plt.grid(True)
 plt.legend()
 
+
+min_s21_index = np.argmin(s21_1)
+min_s21_freq = freq1[min_s21_index]
+min_s21_value = s21_1[min_s21_index]
+
+# Grafik üzerine anotasyon
+plt.annotate(f'Frekans: {min_s21_freq:.2f} GHz',
+             xy=(min_s21_freq, min_s21_value),
+             xytext=(min_s21_freq + 1, min_s21_value + 2),
+             
+             fontsize=10, color='red')
+
 plt.tight_layout()
 plt.show()
 # Sayısal Çıktılar
 print(f"\n1. Görsel ({img_size1[0]}x{img_size1[1]}) için S21 Değerleri:")
-print(f"Maks S21: {np.max(s21_1):.2f} dB @ {freq1[np.argmax(s21_1)]:.2f} GHz")
+print(f"Min S21: {np.min(s21_1):.2f} dB @ {freq1[np.argmin(s21_1)]:.2f} GHz")
 
 
 

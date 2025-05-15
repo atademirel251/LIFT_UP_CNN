@@ -51,7 +51,7 @@ model_path = r"C:\Users\atade\Desktop\test_sonuçları\VGG16+TEST\model\14348Dü
 model = load_model(model_path, custom_objects={'weighted_loss': weighted_loss})
 
 # Kullanım Örneği
-image_path1 = r"C:\Users\atade\Desktop\LIFT_UP_CNN\generated_patterns\pattern_freq_15.png"
+image_path1 = r"C:\Users\atade\Desktop\LIFT_UP_CNN\generated_patterns\pattern_freq_17.png"
 freq1, s21_1, img_size1, img1 = predict_s21_from_image(model, image_path1)
 
 # Flip işlemleri

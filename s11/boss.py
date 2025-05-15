@@ -3,7 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 # CSV dosyalarının bulunduğu klasör
-csv_klasoru = r"C:\Users\atade\Desktop\veri_seti\s11_csv"  # klasör adı veya tam yol
+csv_klasoru = r"C:\Users\atade\Desktop\ek_dataset\csvler"  # klasör adı veya tam yol
 output_klasoru = os.path.join(csv_klasoru, "grafikler10")
 
 # Çıktı klasörü yoksa oluştur

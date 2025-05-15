@@ -142,8 +142,8 @@ class PatternGenerator:
         self.freq_mean, self.freq_std = self._get_frequency_stats()
     
     def _get_frequency_stats(self):
-        image_folder = r"C:\Users\atade\Desktop\veri_seti\s11_resim"
-        csv_folder = r"C:\Users\atade\Desktop\veri_seti\s11_csv"
+        image_folder = r"C:\Users\atade\Desktop\veri_seti_s11\s11_resim"
+        csv_folder = r"C:\Users\atade\Desktop\veri_seti_s11\s11_csv"
         _, frequencies = load_images_and_frequencies(image_folder, csv_folder)
         return np.mean(frequencies), np.std(frequencies)
     
@@ -193,7 +193,7 @@ class PatternGenerator:
 # ===================== MAIN EXECUTION =====================
 if __name__ == "__main__":
     # Initialize with your model path
-    MODEL_PATH = r"C:\Users\atade\Desktop\LIFT_UP_CNN\Frekanslıgenerator_model12_mayıs3.h5"
+    MODEL_PATH = r"C:\Users\atade\Desktop\LIFT_UP_CNN\Frekanslıgenerator_model12_mayıs4_15.h5"
     
     generator = PatternGenerator(MODEL_PATH)
     

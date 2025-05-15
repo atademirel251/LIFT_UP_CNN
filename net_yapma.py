@@ -17,8 +17,8 @@ def clean_8x8_blocks(image, threshold=0.5):
     return cleaned
 
 # Klasör yolu
-giris_klasoru = r"C:\Users\atade\Desktop\s11_3\desenler3_128"
-cikis_klasoru = r"C:\Users\atade\Desktop\s11_3\desenler3_128_net"
+giris_klasoru = r"C:\Users\atade\Desktop\ek_dataset\resimler_28"
+cikis_klasoru = r"C:\Users\atade\Desktop\ek_dataset\resimler_28_net"
 
 # Çıkış klasörü yoksa oluştur
 os.makedirs(cikis_klasoru, exist_ok=True)

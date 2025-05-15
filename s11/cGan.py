@@ -137,8 +137,8 @@ def load_images_and_frequencies(image_folder, csv_folder, img_size=(64, 64)):
 
 
 # Load images and frequencies
-image_folder = r"C:\Users\atade\Desktop\veri_seti\s11_resim"
-csv_folder = r"C:\Users\atade\Desktop\veri_seti\s11_csv"
+image_folder = r"C:\Users\atade\Desktop\veri_seti_s11\s11_resim"
+csv_folder = r"C:\Users\atade\Desktop\veri_seti_s11\s11_csv"
 images, frequencies = load_images_and_frequencies(image_folder, csv_folder)
 
 # Normalize frequencies to [-1, 1]
@@ -252,10 +252,10 @@ discriminator.compile(loss='binary_crossentropy', optimizer=Adam(0.0001, 0.5), m
 
 generator = build_generator(latent_dim)
 gan = build_gan(generator, discriminator, latent_dim, lambda_symmetry=10, lambda_homogeneity=5)  # 🔹 lambda_homogeneity eklendi
-gan.compile(loss='binary_crossentropy', optimizer=Adam(0.0008, 0.5))
+gan.compile(loss='binary_crossentropy', optimizer=Adam(0.0005, 0.5))
 
 # Training function
-def train_gan(gan, generator, discriminator, images, frequencies, latent_dim, epochs=6000, batch_size=16, save_interval=500):
+def train_gan(gan, generator, discriminator, images, frequencies, latent_dim, epochs=10000, batch_size=16, save_interval=500):
     half_batch = batch_size // 2
     for epoch in range(epochs):
         # Select real images and corresponding frequencies
@@ -313,4 +313,4 @@ def save_images(generator, epoch, latent_dim, frequencies, examples=4):
 
 # Train GAN model
 train_gan(gan, generator, discriminator, images, frequencies, latent_dim)
-generator.save("Frekanslıgenerator_model12_mayıs3.h5")
+generator.save("Frekanslıgenerator_model12_mayıs4_15.h5")

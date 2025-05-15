@@ -1,28 +1,17 @@
 import cv2
 import os
 
-# İşlenecek klasör yolu
-klasor_yolu = r"C:\Users\atade\Desktop\s11_dataset\img"
+# PNG dosyalarının bulunduğu klasör yolu
+folder_path = r"C:\Users\atade\Desktop\ek_dataset\resimler_28_net" # örnek: 'images'
 
-# Geçerli uzantılar
-gecerli_uzantilar = ['.jpg', '.jpeg', '.png']
+# Klasördeki tüm dosyaları döngüyle gez
+for filename in os.listdir(folder_path):
+    if filename.endswith('.png'):
+        file_path = os.path.join(folder_path, filename)
 
-# Tüm dosyaları al
-for dosya in os.listdir(klasor_yolu):
-    dosya_yolu = os.path.join(klasor_yolu, dosya)
+        # Görseli RGB (3 kanallı) olarak oku
+        img_bgr = cv2.imread(file_path, cv2.IMREAD_COLOR)
+        img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
 
-    # Dosya mı ve uzantı uygun mu?
-    if os.path.isfile(dosya_yolu) and os.path.splitext(dosya)[1].lower() in gecerli_uzantilar:
-        # Gri olarak oku
-        gri_resim = cv2.imread(dosya_yolu, cv2.IMREAD_GRAYSCALE)
-
-        # Zaten renkli ise atla (isteğe bağlı)
-        if len(gri_resim.shape) == 2:  # Tek kanallıysa
-            # 3 kanallıya çevir
-            resim_3kanal = cv2.cvtColor(gri_resim, cv2.COLOR_GRAY2BGR)
-
-            # Üzerine kaydet
-            cv2.imwrite(dosya_yolu, resim_3kanal)
-            print(f"{dosya} dosyası 3 kanallı hale getirildi.")
-        else:
-            print(f"{dosya} zaten 3 kanallı, atlandı.")
+        # img_rgb artık RGB formatında ve 3 kanallı
+        print(f"{filename} - Boyut: {img_rgb.shape}")  # (yükseklik, genişlik, 3)
